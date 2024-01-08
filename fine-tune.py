@@ -1,6 +1,6 @@
 from ultralytics import YOLO
 
-model = YOLO("yolov8m-seg.pt")  # load a pretrained model (recommended for training)
+model = YOLO("yolov8m-seg.pt")  # load a pretrained model
 
 # Use the model
 model.train(
