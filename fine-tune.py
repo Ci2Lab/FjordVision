@@ -1,10 +1,29 @@
 from ultralytics import YOLO
 
-model = YOLO("yolov8m-seg.pt")  # load a pretrained model
+# List of pretrained model weights
+models = [
+    ("yolov8n-seg.pt", "n"),
+    ("yolov8s-seg.pt", "s"),
+    ("yolov8m-seg.pt", "m"),
+    ("yolov8l-seg.pt", "l"),
+    ("yolov8x-seg.pt", "x")
+]
 
-# Use the model
-model.train(
-    data="/mnt/RAID/datasets/The Fjord Dataset/fjord3-species.yaml",
-    batch=-1,
-    workers=20)  # train the model
-metrics = model.val()  # evaluate model performance on the validation set
+# Iterate over each pretrained model
+for weights, size in models:
+    # Load the pretrained model
+    model = YOLO(weights)
+
+    # Descriptive experiment name for fine-tuning
+    experiment_name = f"Yolov8{size}-seg-finetune"
+
+    # Train (fine-tune) the model
+    model.train(
+        data="/mnt/RAID/datasets/The Fjord Dataset/fjord.yaml",
+        batch=-1,
+        epochs=300,
+        name=experiment_name  # Set experiment name
+    )
+
+    # Evaluate model performance
+    metrics = model.val()
