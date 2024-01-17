@@ -1,4 +1,5 @@
 from ultralytics import YOLO
+import os.path.exists as exists
 
 # List of pretrained model weights
 models = [
@@ -11,11 +12,14 @@ models = [
 
 # Iterate over each pretrained model
 for weights, size in models:
-    # Load the pretrained model
-    model = YOLO(weights)
-
     # Descriptive experiment name for fine-tuning
     experiment_name = f"Yolov8{size}-seg-finetune"
+
+    if exists(experiment_name):
+        continue
+
+    # Load the pretrained model
+    model = YOLO(weights)
 
     # Train (fine-tune) the model
     model.train(
