@@ -1,21 +1,20 @@
 from ultralytics import YOLO
-import os.path.exists as exists
-
+import os
 # List of model configurations and their respective sizes
 models = [
-    ("yolov8n-seg.yaml", "n"),
-    ("yolov8s-seg.yaml", "s"),
-    ("yolov8l-seg.yaml", "l"),
-    ("yolov8x-seg.yaml", "x")
+    ("yolov8n-seg.pt", "n"),
+    ("yolov8s-seg.pt", "s"),
+    ("yolov8m-seg.pt", "m"),
+    ("yolov8l-seg.pt", "l"),
+    ("yolov8x-seg.pt", "x")
 ]
 
 # Iterate over each model configuration
 for config, size in models:
-
     # Descriptive experiment name for fine-tuning
-    experiment_name = f"Yolov8{size}-seg-finetune"
+    experiment_name = f"Yolov8{size}-seg-train"
 
-    if exists(experiment_name):
+    if os.path.exists("runs/segment/" + experiment_name):
         continue
 
     # Load the model with random weights

@@ -1,6 +1,5 @@
 from ultralytics import YOLO
-import os.path.exists as exists
-
+import os
 # List of pretrained model weights
 models = [
     ("yolov8n-seg.pt", "n"),
@@ -15,7 +14,7 @@ for weights, size in models:
     # Descriptive experiment name for fine-tuning
     experiment_name = f"Yolov8{size}-seg-finetune"
 
-    if exists(experiment_name):
+    if os.path.exists("runs/segment" + experiment_name):
         continue
 
     # Load the pretrained model
