@@ -1,70 +1,133 @@
 import numpy as np
-import os
-import torch
-
-from ultralytics import YOLO
-from ultralytics.nn.modules.head import Detect
-from ultralytics.utils import ops
-
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import cv2
-from PIL import Image
+import numpy as np
+import cv2
 
-import json
-
-class SaveIO:
-    """Simple PyTorch hook to save the output of a nn.module."""
-    def __init__(self):
-        self.input = None
-        self.output = None
-        
-    def __call__(self, module, module_in, module_out):
-        self.input = module_in
-        self.output = module_out
-
-def load_and_prepare_model(model_path):
-    # we are going to register a PyTorch hook on the important parts of the YOLO model,
-    # then reverse engineer the outputs to get boxes and logits
-    # first, we have to register the hooks to the model *before running inference*
-    # then, when inference is run, the hooks will save the inputs/outputs of their respective modules
-    model = YOLO(model_path)
-    detect = None
-    cv2_hooks = None
-    cv3_hooks = None
-    detect_hook = SaveIO()
-    for i, module in enumerate(model.model.modules()):
-        if isinstance(module, Detect):
-            module.register_forward_hook(detect_hook)
-            detect = module
-
-            cv2_hooks = [SaveIO() for _ in range(module.nl)]
-            cv3_hooks = [SaveIO() for _ in range(module.nl)]
-            for i in range(module.nl):
-                module.cv2[i].register_forward_hook(cv2_hooks[i])
-                module.cv3[i].register_forward_hook(cv3_hooks[i])
-            break
-    input_hook = SaveIO()
-    model.model.register_forward_hook(input_hook)
-
-    # save and return these for later
-    hooks = [input_hook, detect, detect_hook, cv2_hooks, cv3_hooks]
-
-    return model, hooks
-
-
-def temperature_scaled_softmax(logits, temperature=1.0, dim=1):
+def apply_mask_to_detected_object(orig_img, box, mask):
     """
-    Applies temperature-scaled softmax function to logits.
+    Apply a mask to a detected object in an image specified by the bounding box.
 
-    Args:
-        logits (torch.Tensor): The input logits to apply softmax to.
-        temperature (float, optional): The temperature scaling factor. Default is 1.0.
-        dim (int, optional): The dimension softmax would be applied to. Default is 1.
-
-    Returns:
-        torch.Tensor: The softmax probabilities after applying temperature scaling.
+    :param orig_img: The original image as a NumPy array.
+    :param box: The bounding box object with 'xyxy' attribute.
+    :param mask: The mask object with 'xy' attribute for segments.
+    :return: Masked image as a NumPy array.
     """
-    if temperature != 1.0:
-        logits = logits / temperature
-    return torch.nn.functional.softmax(logits, dim=dim)
+    # Get bounding box (bbox) coordinates
+    bbox = box.xyxy[0].cpu().numpy()
+    x1, y1, x2, y2 = map(int, bbox)
+
+    # Crop the image using bbox
+    cropped_img_np = orig_img[y1:y2, x1:x2]
+
+    # Initialize an empty binary mask with the same dimensions as the original image
+    npmask = np.zeros(orig_img.shape[:2], dtype=np.uint8)
+
+    # Fill the mask using the segments in 'xy'
+    for segment in mask.xy:
+        np_segment = np.array(segment, np.int32).reshape((-1, 1, 2))
+        cv2.fillPoly(npmask, [np_segment], 255)
+
+    # Crop and resize the mask to match the cropped image size
+    cropped_mask = npmask[y1:y2, x1:x2]
+    mask_resized = cv2.resize(cropped_mask, (x2 - x1, y2 - y1))
+
+    # Apply the mask to the cropped image
+    masked_image = cv2.bitwise_and(cropped_img_np, cropped_img_np, mask=mask_resized)
+
+    # Convert to RGB format if necessary
+    masked_image_rgb = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
+
+    return masked_image_rgb
+
+def calculate_binary_mask_iou(mask1, mask2):
+    """
+    Calculate the Intersection over Union (IoU) for binary masks.
+
+    :param mask1: First binary mask as a NumPy array.
+    :param mask2: Second binary mask as a NumPy array.
+    :return: IoU score as a float.
+    """
+    intersection = np.logical_and(mask1, mask2)
+    union = np.logical_or(mask1, mask2)
+    if np.sum(union) == 0:
+        return 0  # To handle cases where both masks are empty
+    return np.sum(intersection) / np.sum(union)
+
+def convert_polygon_to_mask(polygon, img_shape):
+    """
+    Convert polygon coordinates to a binary mask.
+
+    :param polygon: Polygon coordinates as a list of (x, y) tuples.
+    :param img_shape: Shape of the corresponding image (height, width).
+    :return: Binary mask as a NumPy array.
+    """
+    mask = np.zeros(img_shape[:2], dtype=np.uint8)  # Create a blank mask
+    if len(polygon) > 0:  # Check if the polygon has points
+        np_polygon = np.array(polygon) * [img_shape[1], img_shape[0]]  # Scale to image size
+        np_polygon = np_polygon.astype(np.int32)  # Convert to integer
+        cv2.fillPoly(mask, [np_polygon], 255)  # Fill the polygon on the mask
+    return mask
+
+
+def load_ground_truth_mask_xyn(label_file, img_shape):
+    """
+    Load ground truth mask data from a label file and return in mask.xyn format.
+
+    :param label_file: Path to the label file.
+    :param img_shape: Shape of the corresponding image.
+    :return: List of tuples (class_index, mask_xyn).
+    """
+    gt_masks_xyn = []
+    with open(label_file, 'r') as file:
+        for line in file:
+            elements = line.strip().split()
+            class_index = int(elements[0])
+            # Normalized coordinates as in mask.xyn
+            mask_xyn = np.array([float(x) for x in elements[1:]]).reshape((-1, 2))
+            gt_masks_xyn.append((class_index, mask_xyn))
+
+    return gt_masks_xyn
+
+
+def find_best_ground_truth_match(result, predicted_mask_xyn, img_shape):
+    """
+    Find the ground truth annotation that best matches the predicted mask.
+
+    :param result: The result object containing the image path and masks.
+    :param predicted_mask_xyn: The predicted mask in xyn format.
+    :param img_shape: Shape of the corresponding image.
+    :return: Tuple of the best matching ground truth class and IoU score.
+    """
+    label_file = result.path.replace('/images/', '/labels/').replace('.jpg', '.txt')
+    gt_annotations = load_ground_truth_mask_xyn(label_file, img_shape)
+
+    best_iou = 0
+    best_class = None
+    predicted_mask = convert_polygon_to_mask(predicted_mask_xyn, img_shape)
+
+    for gt_annotation in gt_annotations:
+        cls, gt_polygon_points = gt_annotation
+        gt_mask = convert_polygon_to_mask(gt_polygon_points, img_shape)
+        iou = calculate_binary_mask_iou(gt_mask, predicted_mask)
+
+        if iou > best_iou:
+            best_iou = iou
+            best_class = cls
+
+    return best_class, best_iou
+
+
+def get_taxonomy_hierarchy(taxonomy, class_name):
+    """
+    Retrieve the taxonomy hierarchy for a given class name.
+
+    :param taxonomy: An instance of TaxonomyManager.
+    :param class_name: The name of the class.
+    :return: A list of taxon names representing the hierarchy.
+    """
+    taxon = taxonomy.get_taxon(class_name)
+    hierarchy = []
+    while taxon:
+        hierarchy.append(f"{taxon.rank}: {taxon.name}")
+        taxon = taxon.parent
+    return hierarchy[::-1]  # Reverse the list to start from the top of the hierarchy
