@@ -1,7 +1,10 @@
 import numpy as np
 import cv2
 import numpy as np
-import cv2
+import io
+import pandas as pd
+import os
+from anytree import find_by_attr
 
 def apply_mask_to_detected_object(orig_img, box, mask):
     """
@@ -131,3 +134,57 @@ def get_taxonomy_hierarchy(taxonomy, class_name):
         hierarchy.append(f"{taxon.rank}: {taxon.name}")
         taxon = taxon.parent
     return hierarchy[::-1]  # Reverse the list to start from the top of the hierarchy
+
+
+# Define a function to serialize images
+def serialize_image(image):
+    with io.BytesIO() as buffer:
+        np.save(buffer, image)
+        return buffer.getvalue()
+
+
+# Function to append DataFrame to a Parquet file
+def append_to_parquet_file(df, parquet_file_path):
+    if os.path.exists(parquet_file_path):
+        # Read existing data and append new data
+        existing_df = pd.read_parquet(parquet_file_path)
+        updated_df = pd.concat([existing_df, df])
+    else:
+        # If file does not exist, use the current DataFrame
+        updated_df = df
+    updated_df.to_parquet(parquet_file_path, index=False)
+
+
+# Function to process a single result from YOLO
+def process_result(result, root, class_index_to_name):
+    data = []
+    orig_img = result.orig_img
+    if result.boxes is not None and result.masks is not None:
+        for box, mask in zip(result.boxes, result.masks):
+            masked_img = apply_mask_to_detected_object(orig_img, box, mask)
+            serialized_image = serialize_image(masked_img)
+            conf = box.conf.item()
+            pred = box.cls.item()
+
+            predicted_mask_xyn = mask.xyn[0]
+            best_class, best_iou = find_best_ground_truth_match(result, predicted_mask_xyn, orig_img.shape)
+
+            species_name = class_index_to_name[best_class] if best_class is not None else "Unknown"
+            taxon_node = find_by_attr(root, species_name)
+
+            entry = {
+                'masked_image': serialized_image,
+                'confidence': conf,
+                'iou_with_best_gt': best_iou,
+                'predicted_species': class_index_to_name[int(pred)],
+                'species': species_name
+            }
+
+            if taxon_node:
+                for ancestor in reversed(taxon_node.path):
+                    entry[ancestor.rank] = ancestor.name
+
+            data.append(entry)
+    else:
+        print("No detections in this image.")
+    return data
