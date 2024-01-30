@@ -135,6 +135,10 @@ def get_taxonomy_hierarchy(taxonomy, class_name):
         taxon = taxon.parent
     return hierarchy[::-1]  # Reverse the list to start from the top of the hierarchy
 
+# deserialize image
+def deserialize_image(image):
+    with io.BytesIO(image) as buffer:
+        return np.load(buffer)
 
 # Define a function to serialize images
 def serialize_image(image):
