@@ -1,16 +1,13 @@
 
-# %%
 from ultralytics import YOLO
 import pandas as pd
 import random
 from anytree import Node
-from preprocessing import *
 import torch
-torch.cuda.empty_cache()
+import os
+from preprocessing import process_result, append_to_parquet_file
 
-# Set the random seed for reproducibility
-random.seed(13384)
-
+# Set root and child nodes for taxonomy
 root = Node("object", rank="root")
 
 # Create root nodes
@@ -67,50 +64,44 @@ with open(classes_file, 'r') as file:
         class_name = line.strip()
         class_index_to_name[index] = class_name
 
-# Load the YOLO model
-model = YOLO(MODEL_PATH)
-
-# %%
-import os
-import random
-from ultralytics import YOLO
-
-# Set paths and model
-IMGDIR_PATH = "/mnt/RAID/datasets/label-studio/fjord/images/"
-MODEL_PATH = "runs/segment/Yolov8n-seg-train/weights/best.pt"
-model = YOLO(MODEL_PATH)
-
-# Randomly select 11,000 images from the directory
+# Select and split images
 total_images = 11000
 image_files = random.sample(os.listdir(IMGDIR_PATH), total_images)
 image_paths = [os.path.join(IMGDIR_PATH, img) for img in image_files if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
+train_image_paths, test_image_paths = image_paths[:10000], image_paths[10000:]
 
-# Split into training and testing sets
-train_image_paths = image_paths[:10000]
-test_image_paths = image_paths[10000:]
+# %% [Batch Processing Function]
 
-# Define a function to process and store batches of images
-def process_and_store_batches(image_paths, batch_size, parquet_file_name, model):
+# Function to process and store batches
+def process_and_store_batches(image_paths, batch_size, parquet_file_name):
     batch_data = []
     for batch_start in range(0, len(image_paths), batch_size):
         batch_end = min(batch_start + batch_size, len(image_paths))
-        batch_results = model(image_paths[batch_start:batch_end], stream=True)
+        batch_image_paths = image_paths[batch_start:batch_end]
+        
+        # Reload model for each batch to reset its state
+        model = YOLO(MODEL_PATH)
 
+        # Run YOLO model (non-stream mode)
+        batch_results = model(batch_image_paths)
+
+        # Process results
         for result in batch_results:
             batch_data.extend(process_result(result, root, class_index_to_name))
-
             if len(batch_data) >= batch_size:
                 df_batch = pd.DataFrame(batch_data)
                 append_to_parquet_file(df_batch, parquet_file_name)
                 batch_data = []
+                torch.cuda.empty_cache()  # Clear CUDA cache after each batch
 
-        # Process and save any remaining results in the batch
+        # Handle any remaining results
         if batch_data:
             df_batch = pd.DataFrame(batch_data)
             append_to_parquet_file(df_batch, parquet_file_name)
+            torch.cuda.empty_cache()
 
-# Process training images
-process_and_store_batches(train_image_paths, 500, 'train_dataset.parquet', model)
+# %% [Run Batch Processing]
 
-# Process testing images
-process_and_store_batches(test_image_paths, 500, 'test_dataset.parquet', model)
+# Process training and testing images
+process_and_store_batches(train_image_paths, 20, 'train_dataset.parquet')
+process_and_store_batches(test_image_paths, 20, 'test_dataset.parquet')
