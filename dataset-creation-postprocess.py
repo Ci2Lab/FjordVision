@@ -1,11 +1,11 @@
-
-from ultralytics import YOLO
-import pandas as pd
+import os
 import random
+import pandas as pd
+from ultralytics import YOLO
+from preprocessing import process_result, append_to_parquet_file
 from anytree import Node
 import torch
-import os
-from preprocessing import process_result, append_to_parquet_file
+import gc  # Garbage collector interface
 
 # Set root and child nodes for taxonomy
 root = Node("object", rank="root")
@@ -56,6 +56,22 @@ zostera_marina = Node("zostera marina", parent=zostera, rank="species")
 IMGDIR_PATH = "/mnt/RAID/datasets/label-studio/fjord/images/"
 MODEL_PATH = "runs/segment/Yolov8n-seg-train/weights/best.pt"
 classes_file = '/mnt/RAID/datasets/label-studio/fjord/classes.txt'
+OBJDIR = './segmented-objects/'
+CHECKPOINT_FILE = './checkpoint.txt'
+os.makedirs(OBJDIR, exist_ok=True)
+
+# Helper function to manage checkpoints
+def manage_checkpoint(read=False, update_index=None):
+    if read:
+        try:
+            with open(CHECKPOINT_FILE, 'r') as file:
+                return int(file.read())
+        except FileNotFoundError:
+            return 0  # Return 0 if the file doesn't exist, indicating starting from the beginning
+    elif update_index is not None:
+        with open(CHECKPOINT_FILE, 'w') as file:
+            file.write(str(update_index))
+
 
 # Create a mapping from class indices to class names
 class_index_to_name = {}
@@ -64,44 +80,38 @@ with open(classes_file, 'r') as file:
         class_name = line.strip()
         class_index_to_name[index] = class_name
 
-# Select and split images
-total_images = 11000
+total_images = 17000
+
 image_files = random.sample(os.listdir(IMGDIR_PATH), total_images)
 image_paths = [os.path.join(IMGDIR_PATH, img) for img in image_files if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
-train_image_paths, test_image_paths = image_paths[:10000], image_paths[10000:]
+random.shuffle(image_paths)
 
-# %% [Batch Processing Function]
-
-# Function to process and store batches
+# Process and store batches with checkpointing
 def process_and_store_batches(image_paths, batch_size, parquet_file_name):
-    batch_data = []
-    for batch_start in range(0, len(image_paths), batch_size):
-        batch_end = min(batch_start + batch_size, len(image_paths))
-        batch_image_paths = image_paths[batch_start:batch_end]
+    model = YOLO(MODEL_PATH)
+    checkpoint_index = manage_checkpoint(read=True)
+    total_batches = len(image_paths) // batch_size + (1 if len(image_paths) % batch_size else 0)
+
+    for batch_num in range(checkpoint_index, total_batches):
+        start_index = batch_num * batch_size
+        end_index = start_index + batch_size
+        batch_paths = image_paths[start_index:end_index]
+        batch_results = model(batch_paths)
         
-        # Reload model for each batch to reset its state
-        model = YOLO(MODEL_PATH)
-
-        # Run YOLO model (non-stream mode)
-        batch_results = model(batch_image_paths)
-
-        # Process results
+        batch_data = []
         for result in batch_results:
-            batch_data.extend(process_result(result, root, class_index_to_name))
-            if len(batch_data) >= batch_size:
-                df_batch = pd.DataFrame(batch_data)
-                append_to_parquet_file(df_batch, parquet_file_name)
-                batch_data = []
-                torch.cuda.empty_cache()  # Clear CUDA cache after each batch
-
-        # Handle any remaining results
+            entries = process_result(result, OBJDIR, class_index_to_name)
+            batch_data.extend(entries)
+        
         if batch_data:
             df_batch = pd.DataFrame(batch_data)
             append_to_parquet_file(df_batch, parquet_file_name)
-            torch.cuda.empty_cache()
 
-# %% [Run Batch Processing]
+        manage_checkpoint(update_index=batch_num + 1)  # Update checkpoint to the next batch
 
-# Process training and testing images
-process_and_store_batches(train_image_paths, 20, 'train_dataset.parquet')
-process_and_store_batches(test_image_paths, 20, 'test_dataset.parquet')
+        # Clear the batch data and cache to free up memory
+        del batch_data
+        torch.cuda.empty_cache()
+        gc.collect()  # Force garbage collection
+
+process_and_store_batches(image_paths, 500, 'segmented-objects-dataset.parquet')
