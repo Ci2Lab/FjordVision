@@ -3,3 +3,4 @@ runs/*
 *.pt
 segmented-objects
 *.parquet
+*.pth
