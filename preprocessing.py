@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import numpy as np
 import io
+from pathlib import Path
 import pandas as pd
 import os
 from anytree import find_by_attr
@@ -135,18 +136,6 @@ def get_taxonomy_hierarchy(taxonomy, class_name):
         taxon = taxon.parent
     return hierarchy[::-1]  # Reverse the list to start from the top of the hierarchy
 
-# deserialize image
-def deserialize_image(image):
-    with io.BytesIO(image) as buffer:
-        return np.load(buffer)
-
-# Define a function to serialize images
-def serialize_image(image):
-    with io.BytesIO() as buffer:
-        np.save(buffer, image)
-        return buffer.getvalue()
-
-
 # Function to append DataFrame to a Parquet file
 def append_to_parquet_file(df, parquet_file_path):
     if os.path.exists(parquet_file_path):
@@ -160,13 +149,22 @@ def append_to_parquet_file(df, parquet_file_path):
 
 
 # Function to process a single result from YOLO
-def process_result(result, root, class_index_to_name):
+def process_result(result, basedir, class_index_to_name):
     data = []
     orig_img = result.orig_img
     if result.boxes is not None and result.masks is not None:
-        for box, mask in zip(result.boxes, result.masks):
+        for mask_idx, (box, mask) in enumerate(zip(result.boxes, result.masks)):
             masked_img = apply_mask_to_detected_object(orig_img, box, mask)
-            serialized_image = serialize_image(masked_img)
+            # Extract the original file name without extension and directory
+            original_filename_stem = Path(result.path).stem
+            
+            # Construct new filename with index
+            new_filename = f"{original_filename_stem}_{mask_idx}.jpg"
+            path = os.path.join(basedir, new_filename)
+            
+            # Save the segmented image
+            cv2.imwrite(path, masked_img)
+
             conf = box.conf.item()
             pred = box.cls.item()
 
@@ -174,19 +172,14 @@ def process_result(result, root, class_index_to_name):
             best_class, best_iou = find_best_ground_truth_match(result, predicted_mask_xyn, orig_img.shape)
 
             species_name = class_index_to_name[best_class] if best_class is not None else "Unknown"
-            taxon_node = find_by_attr(root, species_name)
 
             entry = {
-                'masked_image': serialized_image,
+                'masked_image': path,
                 'confidence': conf,
                 'iou_with_best_gt': best_iou,
                 'predicted_species': class_index_to_name[int(pred)],
                 'species': species_name
             }
-
-            if taxon_node:
-                for ancestor in reversed(taxon_node.path):
-                    entry[ancestor.rank] = ancestor.name
 
             data.append(entry)
     else:
