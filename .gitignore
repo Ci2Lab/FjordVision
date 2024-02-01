@@ -1,3 +1,5 @@
 fjordvision/*
 runs/*
 *.pt
+segmented-objects
+*.parquet
