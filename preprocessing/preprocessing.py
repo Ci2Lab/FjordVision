@@ -185,3 +185,28 @@ def process_result(result, basedir, class_index_to_name):
     else:
         print("No detections in this image.")
     return data
+
+
+# Define get_hierarchical_labels function
+def get_hierarchical_labels(species_index, species_names, genus_names, class_names, binary_names, root):
+    if species_index == -1:
+        return -1, -1, -1  # Handle cases where species_index is invalid
+
+    species_name = species_names[species_index]
+    node = next((n for n in root.descendants if n.name == species_name), None)
+
+    if node is None:
+        return -1, -1, -1  # Species not found in the tree
+
+    genus_index, class_index, binary_index = -1, -1, -1
+    current_node = node
+    while current_node.parent is not None:
+        current_node = current_node.parent
+        if current_node.rank == 'genus':
+            genus_index = genus_names.index(current_node.name) if current_node.name in genus_names else -1
+        elif current_node.rank == 'class':
+            class_index = class_names.index(current_node.name) if current_node.name in class_names else -1
+        elif current_node.rank == 'binary':
+            binary_index = binary_names.index(current_node.name) if current_node.name in binary_names else -1
+
+    return species_index, genus_index, class_index, binary_index
