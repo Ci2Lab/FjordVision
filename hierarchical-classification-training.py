@@ -4,6 +4,7 @@
 # %%
 import pandas as pd
 from anytree import Node
+from anytree.importer import JsonImporter
 from preprocessing import *
 import torch
 import torch.nn as nn
@@ -18,51 +19,8 @@ import csv
 # # Populate Taxonomy
 
 # %%
-root = Node("object", rank="root")
-
-# Create root nodes
-marine_life = Node("marine life", parent=root, rank="binary")
-inanimate = Node("inanimate", parent=root, rank="binary")
-
-# Create class nodes under the respective root nodes
-asteroidea = Node("Asteroidea", parent=marine_life, rank="class")
-phaeophyceae = Node("phaeophyceae", parent=marine_life, rank="class")
-bivalia = Node("bivalia", parent=marine_life, rank="class")
-myxini = Node("myxini", parent=marine_life, rank="class")
-artificial = Node("artificial", parent=inanimate, rank="class")
-natural = Node("natural", parent=inanimate, rank="class")
-chlorophyta = Node("chlorophyta", parent=marine_life, rank="class")
-monocots = Node("monocots", parent=marine_life, rank="class")
-
-# Create genus nodes under the respective class nodes
-asterias = Node("asterias", parent=asteroidea, rank="genus")
-fucus = Node("fucus", parent=phaeophyceae, rank="genus")
-henrica = Node("Henrica", parent=asteroidea, rank="genus")
-mya = Node("mya", parent=bivalia, rank="genus")
-myxine = Node("myxine", parent=myxini, rank="genus")
-cylindrical = Node("cylindrical", parent=artificial, rank="genus")
-solid = Node("solid", parent=natural, rank="genus")
-arboral = Node("arboral", parent=natural, rank="genus")
-saccharina = Node("saccharina", parent=phaeophyceae, rank="genus")
-ulva = Node("ulva", parent=chlorophyta, rank="genus")
-urospora = Node("Urospora", parent=chlorophyta, rank="genus")
-zostera = Node("zostera", parent=monocots, rank="genus")
-
-# Create species nodes under the respective genus nodes
-asterias_rubens = Node("asterias rubens", parent=asterias, rank="species")
-asterias = Node("asteroidea", parent=asterias, rank="species")
-asterias_rubens = Node("asterias", parent=asterias, rank="species")
-fucus_vesiculosus = Node("fucus vesiculosus", parent=fucus, rank="species")
-henrica_species = Node("henrica", parent=henrica, rank="species")  # Assuming "henrica" is a species
-mytilus_edulis = Node("mytilus edulis", parent=mya, rank="species")
-myxine_glurinosa = Node("myxine glurinosa", parent=myxine, rank="species")
-pipe = Node("pipe", parent=cylindrical, rank="species")
-rock = Node("rock", parent=solid, rank="species")
-saccharina_latissima = Node("saccharina latissima", parent=saccharina, rank="species")
-tree = Node("tree", parent=arboral, rank="species")
-ulva_intestinalis = Node("ulva intestinalis", parent=ulva, rank="species")
-urospora_species = Node("urospora", parent=urospora, rank="species")
-zostera_marina = Node("zostera marina", parent=zostera, rank="species")
+importer = JsonImporter()
+root = importer.read(open('ontology.json', 'r'))
 
 classes_file = '/mnt/RAID/datasets/label-studio/fjord/classes.txt'
 

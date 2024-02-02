@@ -1,0 +1,196 @@
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "name": "asterias rubens",
+                  "rank": "species"
+                },
+                {
+                  "children": [
+                    {
+                      "name": "asterias",
+                      "rank": "species"
+                    }
+                  ],
+                  "name": "asteroidea",
+                  "rank": "species"
+                }
+              ],
+              "name": "asterias",
+              "rank": "genus"
+            },
+            {
+              "children": [
+                {
+                  "name": "henrica",
+                  "rank": "species"
+                }
+              ],
+              "name": "Henrica",
+              "rank": "genus"
+            }
+          ],
+          "name": "Asteroidea",
+          "rank": "class"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "name": "fucus vesiculosus",
+                  "rank": "species"
+                }
+              ],
+              "name": "fucus",
+              "rank": "genus"
+            },
+            {
+              "children": [
+                {
+                  "name": "saccharina latissima",
+                  "rank": "species"
+                }
+              ],
+              "name": "saccharina",
+              "rank": "genus"
+            }
+          ],
+          "name": "phaeophyceae",
+          "rank": "class"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "name": "mytilus edulis",
+                  "rank": "species"
+                }
+              ],
+              "name": "mya",
+              "rank": "genus"
+            }
+          ],
+          "name": "bivalia",
+          "rank": "class"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "name": "myxine glurinosa",
+                  "rank": "species"
+                }
+              ],
+              "name": "myxine",
+              "rank": "genus"
+            }
+          ],
+          "name": "myxini",
+          "rank": "class"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "name": "ulva intestinalis",
+                  "rank": "species"
+                }
+              ],
+              "name": "ulva",
+              "rank": "genus"
+            },
+            {
+              "children": [
+                {
+                  "name": "urospora",
+                  "rank": "species"
+                }
+              ],
+              "name": "Urospora",
+              "rank": "genus"
+            }
+          ],
+          "name": "chlorophyta",
+          "rank": "class"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "name": "zostera marina",
+                  "rank": "species"
+                }
+              ],
+              "name": "zostera",
+              "rank": "genus"
+            }
+          ],
+          "name": "monocots",
+          "rank": "class"
+        }
+      ],
+      "name": "marine life",
+      "rank": "binary"
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "name": "pipe",
+                  "rank": "species"
+                }
+              ],
+              "name": "cylindrical",
+              "rank": "genus"
+            }
+          ],
+          "name": "artificial",
+          "rank": "class"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "name": "rock",
+                  "rank": "species"
+                }
+              ],
+              "name": "solid",
+              "rank": "genus"
+            },
+            {
+              "children": [
+                {
+                  "name": "tree",
+                  "rank": "species"
+                }
+              ],
+              "name": "arboral",
+              "rank": "genus"
+            }
+          ],
+          "name": "natural",
+          "rank": "class"
+        }
+      ],
+      "name": "inanimate",
+      "rank": "binary"
+    }
+  ],
+  "name": "object",
+  "rank": "root"
+}
