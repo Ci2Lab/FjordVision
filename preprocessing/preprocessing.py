@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 import os
 from anytree import find_by_attr
+from anytree import RenderTree
 
 def apply_mask_to_detected_object(orig_img, box, mask):
     """
@@ -57,6 +58,7 @@ def calculate_binary_mask_iou(mask1, mask2):
         return 0  # To handle cases where both masks are empty
     return np.sum(intersection) / np.sum(union)
 
+
 def convert_polygon_to_mask(polygon, img_shape):
     """
     Convert polygon coordinates to a binary mask.
@@ -73,7 +75,7 @@ def convert_polygon_to_mask(polygon, img_shape):
     return mask
 
 
-def load_ground_truth_mask_xyn(label_file, img_shape):
+def load_ground_truth_mask_xyn(label_file):
     """
     Load ground truth mask data from a label file and return in mask.xyn format.
 
@@ -103,7 +105,7 @@ def find_best_ground_truth_match(result, predicted_mask_xyn, img_shape):
     :return: Tuple of the best matching ground truth class and IoU score.
     """
     label_file = result.path.replace('/images/', '/labels/').replace('.jpg', '.txt')
-    gt_annotations = load_ground_truth_mask_xyn(label_file, img_shape)
+    gt_annotations = load_ground_truth_mask_xyn(label_file)
 
     best_iou = 0
     best_class = None
@@ -113,8 +115,9 @@ def find_best_ground_truth_match(result, predicted_mask_xyn, img_shape):
         cls, gt_polygon_points = gt_annotation
         gt_mask = convert_polygon_to_mask(gt_polygon_points, img_shape)
         iou = calculate_binary_mask_iou(gt_mask, predicted_mask)
-
-        if iou > best_iou:
+        
+        min_iou_threshold = 0.6  # Example threshold
+        if iou > best_iou and iou >= min_iou_threshold:
             best_iou = iou
             best_class = cls
 
@@ -186,6 +189,13 @@ def process_result(result, basedir, class_index_to_name):
         print("No detections in this image.")
     return data
 
+def maxdepth(tree):
+    maxdepth = 0
+    for pre, _, node in RenderTree(tree):
+        depth = node.depth
+        if depth > maxdepth:
+            maxdepth = depth
+    return maxdepth
 
 # Define get_hierarchical_labels function
 def get_hierarchical_labels(species_index, species_names, genus_names, class_names, binary_names, root):
