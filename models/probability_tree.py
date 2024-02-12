@@ -8,20 +8,19 @@ class ProbabilityTree:
         self.importer = JsonImporter()
         with open(ontology_path, 'r') as f:
             self.root = self.importer.read(f)
-        self.assign_uniform_probabilities()
+        self.assign_uniform_probabilities_to_leaves_and_propagate_up()
 
-    def assign_uniform_probabilities(self):
-        # Calculate the number of nodes per rank
-        nodes_per_rank = defaultdict(int)
-        for node in PreOrderIter(self.root):
-            if hasattr(node, 'rank'):
-                nodes_per_rank[node.rank] += 1
-
-        # Assign uniform probability based on rank
-        for node in PreOrderIter(self.root):
-            if hasattr(node, 'rank'):
-                total_nodes = nodes_per_rank[node.rank]
-                node.probability = 1 / total_nodes if total_nodes else 0
+    def assign_uniform_probabilities_to_leaves_and_propagate_up(self):
+        # Step 1: Assign uniform probabilities to leaves
+        leaves = [node for node in PreOrderIter(self.root) if node.is_leaf]
+        uniform_probability = 1 / len(leaves) if leaves else 0
+        for leaf in leaves:
+            leaf.probability = uniform_probability
+        
+        # Step 2: Propagate probabilities up the tree
+        for node in reversed(list(PreOrderIter(self.root))): # Process nodes from bottom to top
+            if not node.is_leaf:
+                node.probability = sum(child.probability for child in node.children if hasattr(child, 'probability'))
 
     def print_tree(self):
         for pre, _, node in RenderTree(self.root):
@@ -45,3 +44,31 @@ class ProbabilityTree:
             siblings_probability_sum = sum(sibling.probability for sibling in node.parent.children if hasattr(sibling, 'probability'))
 
             return siblings_probability_sum
+
+    def update_probabilities_with_instance_counts(self, instance_counts):
+        # instance_counts is a dictionary where keys are node names and values are the instance counts
+        
+        # Step 1: Update leaf node probabilities based on instance counts
+        for node in PreOrderIter(self.root):
+            if node.is_leaf:
+                if node.name in instance_counts:
+                    node.instance_count = instance_counts[node.name]
+                else:
+                    node.instance_count = 0  # Default to 0 if not specified
+
+        # Calculate total instances for normalization
+        total_instances = sum(node.instance_count for node in PreOrderIter(self.root) if node.is_leaf)
+
+        # Assign probabilities to leaf nodes based on their instance count
+        for node in PreOrderIter(self.root):
+            if node.is_leaf:
+                node.probability = node.instance_count / total_instances if total_instances else 0
+        
+        # Step 2: Propagate probabilities upwards
+        for node in PreOrderIter(self.root):
+            if not node.is_leaf:
+                # Sum the probabilities of child nodes
+                node.probability = sum(child.probability for child in node.children)
+
+        # Note: This assumes the instance counts fully define the distribution at the lowest level
+        # and that each non-leaf node's probability is the sum of its children's probabilities.
