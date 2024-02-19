@@ -44,6 +44,7 @@ def apply_mask_to_detected_object(orig_img, box, mask):
 
     return masked_image_rgb
 
+
 def calculate_binary_mask_iou(mask1, mask2):
     """
     Calculate the Intersection over Union (IoU) for binary masks.
@@ -116,8 +117,7 @@ def find_best_ground_truth_match(result, predicted_mask_xyn, img_shape):
         gt_mask = convert_polygon_to_mask(gt_polygon_points, img_shape)
         iou = calculate_binary_mask_iou(gt_mask, predicted_mask)
         
-        min_iou_threshold = 0.6  # Example threshold
-        if iou > best_iou and iou >= min_iou_threshold:
+        if iou > best_iou:
             best_iou = iou
             best_class = cls
 
