@@ -36,7 +36,7 @@ for node in root.descendants:
         binary_names.append(node.name)
 
 # Read Dataset
-df = pd.read_parquet('data/segmented-objects-dataset.parquet')
+df = pd.read_parquet('/mnt/RAID/projects/FjordVision/segmented-objects-dataset2.parquet')
 
 train_val_df, test_df = train_test_split(df, test_size=0.3, random_state=42)
 train_df, val_df = train_test_split(train_val_df, test_size=0.5, random_state=42)
@@ -71,13 +71,13 @@ criterion = HierarchicalCrossEntropyLoss(num_levels=num_levels).to(device)
 optimizer = torch.optim.Adam(list(model.parameters()) + list(criterion.parameters()), lr=0.001)
 
 # Training
-num_epochs = 20
+num_epochs = 100
 best_val_loss = float('inf')
 last_model_path = 'models/weights/flat_last_model.pth'
 best_model_path = 'models/weights/flat_best_model.pth'
 
 # Define your scheduler
-scheduler = MultiStepLR(optimizer, milestones=[5, 10, 15], gamma=0.1)
+scheduler = MultiStepLR(optimizer, milestones=[20, 40, 60, 80], gamma=0.1)
 
 with open('training_log.csv', mode='w', newline='') as file:
     writer = csv.writer(file)
