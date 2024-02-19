@@ -46,7 +46,6 @@ class CustomDataset(Dataset):
         image = Image.open(image_path)
         image_resized = image.resize((128, 128))
 
-
         # Convert images to tensor
         image_tensor = torch.tensor(np.array(image_resized), dtype=torch.float32).permute(2, 0, 1) / 255.0  # Normalize if necessary
 
