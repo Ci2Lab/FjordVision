@@ -71,17 +71,17 @@ criterion = HierarchicalCrossEntropyLoss(num_levels=num_levels).to(device)
 optimizer = torch.optim.Adam(list(model.parameters()) + list(criterion.parameters()), lr=0.001)
 
 # Training
-num_epochs = 100
+num_epochs = 20
 best_val_loss = float('inf')
 last_model_path = 'models/weights/flat_last_model.pth'
 best_model_path = 'models/weights/flat_best_model.pth'
 
 # Define your scheduler
-scheduler = MultiStepLR(optimizer, milestones=[20, 40, 60, 80], gamma=0.1)
+scheduler = MultiStepLR(optimizer, milestones=[5, 10, 15, 20], gamma=0.1)
 
 with open('training_log.csv', mode='w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerow(['Epoch', 'Training Loss', 'Validation Loss', 'Learnable Weights'])
+    writer.writerow(['Epoch', 'Training Loss', 'Validation Loss'])
 
     for epoch in range(num_epochs):
         model.train()
@@ -103,7 +103,6 @@ with open('training_log.csv', mode='w', newline='') as file:
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
-            criterion.weights.data.clamp_(min=0)
             for images, conf, iou, pred_species, species_index, genus_index, class_index, binary_index in val_loader:
                 images, conf, iou, pred_species = images.to(device), conf.to(device), iou.to(device), pred_species.to(device)
                 species_index, genus_index, class_index, binary_index = species_index.to(device), genus_index.to(device), class_index.to(device), binary_index.to(device)
@@ -115,9 +114,8 @@ with open('training_log.csv', mode='w', newline='') as file:
         train_loss /= len(train_loader)
         val_loss /= len(val_loader)
         
-        learnable_weights = criterion.weights.detach().cpu().numpy()
         print(f"Epoch: {epoch+1}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}")
-        writer.writerow([epoch+1, train_loss, val_loss, learnable_weights])
+        writer.writerow([epoch+1, train_loss, val_loss])
 
         scheduler.step()
 
