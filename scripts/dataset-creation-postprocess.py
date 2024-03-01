@@ -41,7 +41,7 @@ def manage_checkpoint(read=False, update_index=None):
         with open(CHECKPOINT_FILE, 'w') as file:
             file.write(str(update_index))
 
-total_images = 1000
+total_images = 17000
 
 image_files = random.sample(os.listdir(IMGDIR_PATH), total_images)
 image_paths = [os.path.join(IMGDIR_PATH, img) for img in image_files if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
@@ -75,4 +75,4 @@ def process_and_store_batches(image_paths, batch_size, parquet_file_name):
         torch.cuda.empty_cache()
         gc.collect()  # Force garbage collection
 
-process_and_store_batches(image_paths, 500, 'segmented-objects-dataset2.parquet')
+process_and_store_batches(image_paths, 500, 'segmented-objects-dataset.parquet')
