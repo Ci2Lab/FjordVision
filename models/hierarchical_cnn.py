@@ -3,7 +3,7 @@ import torch.nn as nn
 from .branch_cnn import BranchCNN
 
 class HierarchicalCNN(nn.Module):
-    def __init__(self, num_classes_hierarchy, num_additional_features):
+    def __init__(self, num_classes_hierarchy, num_additional_features, output_size=(5, 5)):
         super(HierarchicalCNN, self).__init__()
 
         # Convolutional layers for feature extraction
@@ -33,13 +33,14 @@ class HierarchicalCNN(nn.Module):
                 nn.MaxPool2d(kernel_size=2, stride=2)
             )
         ])
-        # Calculate feature sizes for each branch dynamically
-        # Example usage in __init__:
-        self.feature_sizes = [self._get_conv_output((3, 128, 128), i) for i, _ in enumerate(self.conv_layers)]
 
+        # Adaptive pooling layer
+        self.adaptive_pool = nn.AdaptiveAvgPool2d(output_size)
+
+        # Initialize branches with a standardized feature size
         self.branches = nn.ModuleList([
-            BranchCNN(feature_size, num_classes, num_additional_features)
-            for feature_size, num_classes in zip(self.feature_sizes, num_classes_hierarchy)
+            BranchCNN(output_size[0] * output_size[1] * 150, num_classes, num_additional_features)  # Adjust the size accordingly
+            for num_classes in num_classes_hierarchy
         ])
 
         self.activations = []
@@ -78,8 +79,15 @@ class HierarchicalCNN(nn.Module):
         outputs = []
         additional_features = torch.cat((conf.view(-1, 1), iou.view(-1, 1), pred_species.view(-1, 1)), dim=1)
 
-        for conv_layer, branch in zip(self.conv_layers, self.branches):
-            x = conv_layer(x)
+        x = self._forward_features(x)
+
+        # Apply adaptive pooling
+        x = self.adaptive_pool(x)
+
+        # Flatten the features after adaptive pooling
+        x = x.view(x.size(0), -1)
+
+        for branch in self.branches:
             branch_output = branch(x, additional_features)
             outputs.append(branch_output)
 
