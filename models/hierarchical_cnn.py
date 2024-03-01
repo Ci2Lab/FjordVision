@@ -9,31 +9,30 @@ class HierarchicalCNN(nn.Module):
         # Convolutional layers for feature extraction
         self.conv_layers = nn.ModuleList([
             nn.Sequential(
-                nn.Conv2d(3, 16, kernel_size=3, padding=1),
-                nn.BatchNorm2d(16),
+                nn.Conv2d(3, 30, kernel_size=5, padding=2),
+                nn.BatchNorm2d(30),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d(kernel_size=2, stride=2)
             ),
             nn.Sequential(
-                nn.Conv2d(16, 32, kernel_size=3, padding=1),
-                nn.BatchNorm2d(32),
+                nn.Conv2d(30, 60, kernel_size=5, padding=2),
+                nn.BatchNorm2d(60),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d(kernel_size=2, stride=2)
             ),
             nn.Sequential(
-                nn.Conv2d(32, 64, kernel_size=3, padding=1),
-                nn.BatchNorm2d(64),
+                nn.Conv2d(60, 100, kernel_size=3, padding=1),
+                nn.BatchNorm2d(100),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d(kernel_size=2, stride=2)
             ),
             nn.Sequential(
-                nn.Conv2d(64, 64, kernel_size=3, padding=1),
-                nn.BatchNorm2d(64),
+                nn.Conv2d(100, 150, kernel_size=3, padding=1),
+                nn.BatchNorm2d(150),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d(kernel_size=2, stride=2)
             )
         ])
-
         # Calculate feature sizes for each branch dynamically
         # Example usage in __init__:
         self.feature_sizes = [self._get_conv_output((3, 128, 128), i) for i, _ in enumerate(self.conv_layers)]
@@ -43,6 +42,17 @@ class HierarchicalCNN(nn.Module):
             for feature_size, num_classes in zip(self.feature_sizes, num_classes_hierarchy)
         ])
 
+        self.activations = []
+
+    def register_hooks(self):
+        def hook_fn(module, input, output):
+            self.activations.append(output)
+            
+        # Register the hook on the last layer of each nn.Sequential block
+        for block in self.conv_layers:
+            # Assuming the last layer of each block is what we're interested in
+            last_layer = block[-1]  # Get the last layer in each sequential block
+            last_layer.register_forward_hook(hook_fn)
 
     def _get_conv_output(self, shape, conv_layer_end):
         """
@@ -74,4 +84,36 @@ class HierarchicalCNN(nn.Module):
             outputs.append(branch_output)
 
         return outputs
+    
+    def get_activations(self, x, layer_indices):
+        """
+        Get activations from specified layers.
+        
+        Args:
+        x (torch.Tensor): The input tensor.
+        layer_indices (list of int): Indices of the layers from which to get activations.
+        
+        Returns:
+        List of torch.Tensor: Activations from the specified layers.
+        """
+        activations = []
+        
+        # Helper function to be used as a hook
+        def hook_fn(module, input, output):
+            activations.append(output)
 
+        # Register hook for each specified layer
+        hooks = []
+        for idx in layer_indices:
+            layer = self.conv_layers[idx][-1]  # Assuming we're interested in the last layer of each block
+            hook = layer.register_forward_hook(hook_fn)
+            hooks.append(hook)
+
+        # Forward pass
+        self._forward_features(x)  # This will trigger the hooks and capture activations
+
+        # Remove hooks after use
+        for hook in hooks:
+            hook.remove()
+
+        return activations
