@@ -64,7 +64,7 @@ val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 # Specify the initial value of alpha and whether it should be learnable
-initial_alpha = 0.5  # Example initial value
+initial_alpha = 1  # Example initial value
 alpha_learnable = False  # Set True if alpha should be learnable, False otherwise
 
 # Training Preparation
@@ -78,7 +78,7 @@ optimizer = torch.optim.Adam(list(model.parameters()) + list(criterion.parameter
 scheduler = MultiStepLR(optimizer, milestones=[20, 40, 60, 80], gamma=0.1)
 
 # Logging Setup
-with open('logs/model_alpha_05.csv', mode='w', newline='') as file:
+with open('logs/model_alpha_1.csv', mode='w', newline='') as file:
     writer = csv.writer(file)
     # Adjust headers to include lambda weights; assume max number of levels is known
     headers = ['Epoch', 'Training Loss', 'Validation Loss', 'Alpha'] + [f'Lambda Weight Lvl {i+1}' for i in range(num_levels)]
@@ -130,7 +130,7 @@ with open('logs/model_alpha_05.csv', mode='w', newline='') as file:
         # Early stopping and model checkpointing
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), 'models/weights/best_model_alpha_05.pth')
+            torch.save(model.state_dict(), 'models/weights/best_model_alpha_1.pth')
             patience_counter = 0
         else:
             patience_counter += 1
@@ -141,4 +141,4 @@ with open('logs/model_alpha_05.csv', mode='w', newline='') as file:
         scheduler.step()
 
         # Save the last model
-        torch.save(model.state_dict(), 'models/weights/last_model_alpha_05.pth')
+        torch.save(model.state_dict(), 'models/weights/last_model_alpha_1.pth')
