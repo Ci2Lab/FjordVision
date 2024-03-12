@@ -4,3 +4,5 @@ runs/*
 segmented-objects
 *.parquet
 *.pth
+activations/*
+class-activations/*
