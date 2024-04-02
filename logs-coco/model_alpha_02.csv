@@ -1,0 +1,2 @@
+Epoch,Training Loss,Validation Loss,Alpha,Lambda Weight Lvl 1,Lambda Weight Lvl 2,Lambda Weight Lvl 3,Lambda Weight Lvl 4
+1,2.390423288657552,1.4950562951465447,1.0,0.049787066876888275,0.1353352814912796,0.3678794801235199,1.0
