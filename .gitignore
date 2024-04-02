@@ -6,3 +6,4 @@ segmented-objects
 *.pth
 activations/*
 class-activations/*
+coco-segmented-objects
