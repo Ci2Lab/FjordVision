@@ -7,3 +7,4 @@ segmented-objects/*
 activations/*
 class-activations/*
 coco-segmented-objects/*
+*.pyc
