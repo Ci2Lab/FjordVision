@@ -1,9 +1,9 @@
 fjordvision/*
 runs/*
 *.pt
-segmented-objects
+segmented-objects/*
 *.parquet
 *.pth
 activations/*
 class-activations/*
-coco-segmented-objects
+coco-segmented-objects/*
