@@ -8,3 +8,4 @@ activations/*
 class-activations/*
 coco-segmented-objects/*
 *.pyc
+models/weights/*
