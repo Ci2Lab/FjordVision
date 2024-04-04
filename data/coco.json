@@ -1,477 +1,487 @@
 {
-    "name": "COCO Dataset",
-    "rank": "root",
-    "children": [
-      {
-        "name": "Living Beings",
-        "rank": "category",
-        "children": [
-          {
-            "name": "Humans",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "person",
-                "rank": "class"
-              }
-            ]
-          },
-          {
-            "name": "Animals",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "cat",
-                "rank": "class"
-              },
-              {
-                "name": "dog",
-                "rank": "class"
-              },
-              {
-                "name": "horse",
-                "rank": "class"
-              },
-              {
-                "name": "sheep",
-                "rank": "class"
-              },
-              {
-                "name": "cow",
-                "rank": "class"
-              },
-              {
-                "name": "elephant",
-                "rank": "class"
-              },
-              {
-                "name": "bear",
-                "rank": "class"
-              },
-              {
-                "name": "zebra",
-                "rank": "class"
-              },
-              {
-                "name": "giraffe",
-                "rank": "class"
-              },
-              {
-                "name": "bird",
-                "rank": "class"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Vehicles",
-        "rank": "category",
-        "children": [
-          {
-            "name": "Land Vehicles",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "bicycle",
-                "rank": "class"
-              },
-              {
-                "name": "car",
-                "rank": "class"
-              },
-              {
-                "name": "motorcycle",
-                "rank": "class"
-              },
-              {
-                "name": "bus",
-                "rank": "class"
-              },
-              {
-                "name": "train",
-                "rank": "class"
-              },
-              {
-                "name": "truck",
-                "rank": "class"
-              }
-            ]
-          },
-          {
-            "name": "Air Vehicles",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "airplane",
-                "rank": "class"
-              }
-            ]
-          },
-          {
-            "name": "Water Vehicles",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "boat",
-                "rank": "class"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Outdoor Objects",
-        "rank": "category",
-        "children": [
-          {
-            "name": "Street Furniture",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "traffic light",
-                "rank": "class"
-              },
-              {
-                "name": "fire hydrant",
-                "rank": "class"
-              },
-              {
-                "name": "stop sign",
-                "rank": "class"
-              },
-              {
-                "name": "parking meter",
-                "rank": "class"
-              },
-              {
-                "name": "bench",
-                "rank": "class"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Sports Equipment",
-        "rank": "category",
-        "children": [
-          {
-            "name": "Sporting Goods",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "frisbee",
-                "rank": "class"
-              },
-              {
-                "name": "skis",
-                "rank": "class"
-              },
-              {
-                "name": "snowboard",
-                "rank": "class"
-              },
-              {
-                "name": "sports ball",
-                "rank": "class"
-              },
-              {
-                "name": "kite",
-                "rank": "class"
-              },
-              {
-                "name": "baseball bat",
-                "rank": "class"
-              },
-              {
-                "name": "baseball glove",
-                "rank": "class"
-              },
-              {
-                "name": "skateboard",
-                "rank": "class"
-              },
-              {
-                "name": "surfboard",
-                "rank": "class"
-              },
-              {
-                "name": "tennis racket",
-                "rank": "class"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Kitchen and Dining",
-        "rank": "category",
-        "children": [
-          {
-            "name": "Kitchenware",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "bottle",
-                "rank": "class"
-              },
-              {
-                "name": "wine glass",
-                "rank": "class"
-              },
-              {
-                "name": "cup",
-                "rank": "class"
-              },
-              {
-                "name": "fork",
-                "rank": "class"
-              },
-              {
-                "name": "knife",
-                "rank": "class"
-              },
-              {
-                "name": "spoon",
-                "rank": "class"
-              },
-              {
-                "name": "bowl",
-                "rank": "class"
-              }
-            ]
-          },
-          {
-            "name": "Furniture",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "dining table",
-                "rank": "class"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Food",
-        "rank": "category",
-        "children": [
-          {
-            "name": "Fruits and Vegetables",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "banana",
-                "rank": "class"
-              },
-              {
-                "name": "apple",
-                "rank": "class"
-              },
-              {
-                "name": "orange",
-                "rank": "class"
-              },
-              {
-                "name": "broccoli",
-                "rank": "class"
-              },
-              {
-                "name": "carrot",
-                "rank": "class"
-              }
-            ]
-          },
-          {
-            "name": "Prepared Foods",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "sandwich",
-                "rank": "class"
-              },
-              {
-                "name": "hot dog",
-                "rank": "class"
-              },
-              {
-                "name": "pizza",
-                "rank": "class"
-              },
-              {
-                "name": "donut",
-                "rank": "class"
-              },
-              {
-                "name": "cake",
-                "rank": "class"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Personal Items",
-        "rank": "category",
-        "children": [
-          {
-            "name": "Accessories",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "backpack",
-                "rank": "class"
-              },
-              {
-                "name": "umbrella",
-                "rank": "class"
-              },
-              {
-                "name": "handbag",
-                "rank": "class"
-              },
-              {
-                "name": "tie",
-                "rank": "class"
-              },
-              {
-                "name": "suitcase",
-                "rank": "class"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Furniture and Home Appliances",
-        "rank": "category",
-        "children": [
-          {
-            "name": "Home Furniture",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "chair",
-                "rank": "class"
-              },
-              {
-                "name": "couch",
-                "rank": "class"
-              },
-              {
-                "name": "potted plant",
-                "rank": "class"
-              },
-              {
-                "name": "bed",
-                "rank": "class"
-              },
-              {
-                "name": "toilet",
-                "rank": "class"
-              }
-            ]
-          },
-          {
-            "name": "Electronics",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "tv",
-                "rank": "class"
-              },
-              {
-                "name": "laptop",
-                "rank": "class"
-              },
-              {
-                "name": "mouse",
-                "rank": "class"
-              },
-              {
-                "name": "remote",
-                "rank": "class"
-              },
-              {
-                "name": "keyboard",
-                "rank": "class"
-              },
-              {
-                "name": "cell phone",
-                "rank": "class"
-              }
-            ]
-          },
-          {
-            "name": "Appliances",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "microwave",
-                "rank": "class"
-              },
-              {
-                "name": "oven",
-                "rank": "class"
-              },
-              {
-                "name": "toaster",
-                "rank": "class"
-              },
-              {
-                "name": "sink",
-                "rank": "class"
-              },
-              {
-                "name": "refrigerator",
-                "rank": "class"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Miscellaneous Items",
-        "rank": "category",
-        "children": [
-          {
-            "name": "Miscellaneous",
-            "rank": "subcategory",
-            "children": [
-              {
-                "name": "book",
-                "rank": "class"
-              },
-              {
-                "name": "clock",
-                "rank": "class"
-              },
-              {
-                "name": "vase",
-                "rank": "class"
-              },
-              {
-                "name": "scissors",
-                "rank": "class"
-              },
-              {
-                "name": "teddy bear",
-                "rank": "class"
-              },
-              {
-                "name": "hair drier",
-                "rank": "class"
-              },
-              {
-                "name": "toothbrush",
-                "rank": "class"
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-  
+  "name": "COCO Objects",
+  "rank": "root",
+  "children": [
+    {
+      "name": "Animate Objects",
+      "rank": "binary",
+      "children": [
+        {
+          "name": "Humans",
+          "rank": "category",
+          "children": [
+            {
+              "name": "Individuals",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "person",
+                  "rank": "object"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Animals",
+          "rank": "category",
+          "children": [
+            {
+              "name": "Domestic Animals",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "dog",
+                  "rank": "object"
+                },
+                {
+                  "name": "cat",
+                  "rank": "object"
+                },
+                {
+                  "name": "horse",
+                  "rank": "object"
+                },
+                {
+                  "name": "sheep",
+                  "rank": "object"
+                },
+                {
+                  "name": "cow",
+                  "rank": "object"
+                }
+              ]
+            },
+            {
+              "name": "Wild Animals",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "bear",
+                  "rank": "object"
+                },
+                {
+                  "name": "elephant",
+                  "rank": "object"
+                },
+                {
+                  "name": "zebra",
+                  "rank": "object"
+                },
+                {
+                  "name": "bird",
+                  "rank": "object"
+                },
+                {
+                  "name": "giraffe",
+                  "rank": "object"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Inanimate Objects",
+      "rank": "binary",
+      "children": [
+        {
+          "name": "Vehicles",
+          "rank": "category",
+          "children": [
+            {
+              "name": "Land Vehicles",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "car",
+                  "rank": "object"
+                },
+                {
+                  "name": "bus",
+                  "rank": "object"
+                },
+                {
+                  "name": "truck",
+                  "rank": "object"
+                },
+                {
+                  "name": "bicycle",
+                  "rank": "object"
+                },
+                {
+                  "name": "motorcycle",
+                  "rank": "object"
+                },
+                {
+                  "name": "train",
+                  "rank": "object"
+                }
+              ]
+            },
+            {
+              "name": "Air and Water Vehicles",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "airplane",
+                  "rank": "object"
+                },
+                {
+                  "name": "boat",
+                  "rank": "object"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Household Items",
+          "rank": "category",
+          "children": [
+            {
+              "name": "Furniture",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "chair",
+                  "rank": "object"
+                },
+                {
+                  "name": "bed",
+                  "rank": "object"
+                },
+                {
+                  "name": "couch",
+                  "rank": "object"
+                },
+                {
+                  "name": "dining table",
+                  "rank": "object"
+                },
+                {
+                  "name": "toilet",
+                  "rank": "object"
+                }
+              ]
+            },
+            {
+              "name": "Appliances",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "tv",
+                  "rank": "object"
+                },
+                {
+                  "name": "microwave",
+                  "rank": "object"
+                },
+                {
+                  "name": "oven",
+                  "rank": "object"
+                },
+                {
+                  "name": "toaster",
+                  "rank": "object"
+                },
+                {
+                  "name": "refrigerator",
+                  "rank": "object"
+                },
+                {
+                  "name": "laptop",
+                  "rank": "object"
+                },
+                {
+                  "name": "mouse",
+                  "rank": "object"
+                },
+                {
+                  "name": "remote",
+                  "rank": "object"
+                },
+                {
+                  "name": "keyboard",
+                  "rank": "object"
+                },
+                {
+                  "name": "cell phone",
+                  "rank": "object"
+                }
+              ]
+            },
+            {
+              "name": "Dining Utensils",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "wine glass",
+                  "rank": "object"
+                },
+                {
+                  "name": "cup",
+                  "rank": "object"
+                },
+                {
+                  "name": "fork",
+                  "rank": "object"
+                },
+                {
+                  "name": "knife",
+                  "rank": "object"
+                },
+                {
+                  "name": "spoon",
+                  "rank": "object"
+                },
+                {
+                  "name": "bowl",
+                  "rank": "object"
+                }
+              ]
+            }
+          ]
+        }
+        ,
+        {
+          "name": "Miscellaneous",
+          "rank": "category",
+          "children": [
+            {
+              "name": "Street Objects",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "traffic light",
+                  "rank": "object"
+                },
+                {
+                  "name": "fire hydrant",
+                  "rank": "object"
+                },
+                {
+                  "name": "stop sign",
+                  "rank": "object"
+                },
+                {
+                  "name": "parking meter",
+                  "rank": "object"
+                },
+                {
+                  "name": "bench",
+                  "rank": "object"
+                }
+              ]
+            },
+            {
+              "name": "Sports and Accessories",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "baseball bat",
+                  "rank": "object"
+                },
+                {
+                  "name": "skateboard",
+                  "rank": "object"
+                },
+                {
+                  "name": "tennis racket",
+                  "rank": "object"
+                },
+                {
+                  "name": "bottle",
+                  "rank": "object"
+                },
+                {
+                  "name": "backpack",
+                  "rank": "object"
+                },
+                {
+                  "name": "umbrella",
+                  "rank": "object"
+                },
+                {
+                  "name": "handbag",
+                  "rank": "object"
+                },
+                {
+                  "name": "tie",
+                  "rank": "object"
+                },
+                {
+                  "name": "suitcase",
+                  "rank": "object"
+                },
+                {
+                  "name": "frisbee",
+                  "rank": "object"
+                },
+                {
+                  "name": "skis",
+                  "rank": "object"
+                },
+                {
+                  "name": "snowboard",
+                  "rank": "object"
+                },
+                {
+                  "name": "sports ball",
+                  "rank": "object"
+                },
+                {
+                  "name": "kite",
+                  "rank": "object"
+                },
+                {
+                  "name": "baseball glove",
+                  "rank": "object"
+                },
+                {
+                  "name": "surfboard",
+                  "rank": "object"
+                }
+              ]
+            },
+            {
+              "name": "Food Items",
+              "rank": "subcategory",
+              "children": [
+                {
+                  "name": "apple",
+                  "rank": "object"
+                },
+                {
+                  "name": "pizza",
+                  "rank": "object"
+                },
+                {
+                  "name": "cake",
+                  "rank": "object"
+                },
+                {
+                  "name": "banana",
+                  "rank": "object"
+                },
+                {
+                  "name": "sandwich",
+                  "rank": "object"
+                },
+                {
+                  "name": "orange",
+                  "rank": "object"
+                },
+                {
+                  "name": "broccoli",
+                  "rank": "object"
+                },
+                {
+                  "name": "carrot",
+                  "rank": "object"
+                },
+                {
+                  "name": "hot dog",
+                  "rank": "object"
+                },
+                {
+                  "name": "donut",
+                  "rank": "object"
+                },
+                {
+                  "name": "potted plant",
+                  "rank": "object"
+                },
+                {
+                  "name": "bed",
+                  "rank": "object"
+                },
+                {
+                  "name": "dining table",
+                  "rank": "object"
+                },
+                {
+                  "name": "toilet",
+                  "rank": "object"
+                },
+                {
+                  "name": "tv",
+                  "rank": "object"
+                },
+                {
+                  "name": "laptop",
+                  "rank": "object"
+                },
+                {
+                  "name": "mouse",
+                  "rank": "object"
+                },
+                {
+                  "name": "remote",
+                  "rank": "object"
+                },
+                {
+                  "name": "keyboard",
+                  "rank": "object"
+                },
+                {
+                  "name": "cell phone",
+                  "rank": "object"
+                },
+                {
+                  "name": "microwave",
+                  "rank": "object"
+                },
+                {
+                  "name": "oven",
+                  "rank": "object"
+                },
+                {
+                  "name": "toaster",
+                  "rank": "object"
+                },
+                {
+                  "name": "sink",
+                  "rank": "object"
+                },
+                {
+                  "name": "refrigerator",
+                  "rank": "object"
+                },
+                {
+                  "name": "book",
+                  "rank": "object"
+                },
+                {
+                  "name": "clock",
+                  "rank": "object"
+                },
+                {
+                  "name": "vase",
+                  "rank": "object"
+                },
+                {
+                  "name": "scissors",
+                  "rank": "object"
+                },
+                {
+                  "name": "teddy bear",
+                  "rank": "object"
+                },
+                {
+                  "name": "hair drier",
+                  "rank": "object"
+                },
+                {
+                  "name": "toothbrush",
+                  "rank": "object"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

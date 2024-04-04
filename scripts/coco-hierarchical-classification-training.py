@@ -11,7 +11,7 @@ import sys
 sys.path.append('/mnt/RAID/projects/FjordVision/')
 
 from models.hierarchical_cnn import HierarchicalCNN
-from utils.custom_dataset import CustomDataset
+from utils.custom_dataset import CustomDatasetCoco
 from utils.hierarchical_loss import HierarchicalCrossEntropyLoss
 from preprocessing.preprocessing import get_hierarchical_labels
 from torch.optim.lr_scheduler import MultiStepLR
@@ -57,9 +57,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = HierarchicalCNN(num_classes_hierarchy, num_additional_features).to(device)
 
 # DataLoader
-train_dataset = CustomDataset(train_df, object_names, subcategory_names, category_names, binary_names, root)
-val_dataset = CustomDataset(val_df, object_names, subcategory_names, category_names, binary_names, root)
-test_dataset = CustomDataset(test_df, object_names, subcategory_names, category_names, binary_names, root)
+train_dataset = CustomDatasetCoco(train_df, object_names, subcategory_names, category_names, binary_names, root)
+val_dataset = CustomDatasetCoco(val_df, object_names, subcategory_names, category_names, binary_names, root)
+test_dataset = CustomDatasetCoco(test_df, object_names, subcategory_names, category_names, binary_names, root)
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
