@@ -39,10 +39,7 @@ def apply_mask_to_detected_object(orig_img, box, mask):
     # Apply the mask to the cropped image
     masked_image = cv2.bitwise_and(cropped_img_np, cropped_img_np, mask=mask_resized)
 
-    # Convert to RGB format if necessary
-    masked_image_rgb = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
-
-    return masked_image_rgb
+    return masked_image
 
 
 def calculate_binary_mask_iou(mask1, mask2):
