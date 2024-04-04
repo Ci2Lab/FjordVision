@@ -7,7 +7,8 @@ from sklearn.model_selection import train_test_split
 import csv
 from collections import defaultdict
 
-# Custom imports based on the new structure
+import sys
+sys.path.append('/mnt/RAID/projects/FjordVision/')
 from models.hierarchical_cnn import HierarchicalCNN
 from utils.custom_dataset import CustomDataset
 from utils.hierarchical_loss import HierarchicalCrossEntropyLoss
