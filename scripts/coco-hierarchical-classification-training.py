@@ -1,4 +1,4 @@
-# Libraries
+import argparse
 import pandas as pd
 from anytree.importer import JsonImporter
 import torch
@@ -6,19 +6,24 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 import csv
 from collections import defaultdict
-
 import sys
+
+# Adding the project directory to the system path
 sys.path.append('/mnt/RAID/projects/FjordVision/')
 
 from models.hierarchical_cnn import HierarchicalCNN
 from utils.custom_dataset import CustomDatasetCoco
 from utils.hierarchical_loss import HierarchicalCrossEntropyLoss
-from preprocessing.preprocessing import get_hierarchical_labels
 from torch.optim.lr_scheduler import MultiStepLR
+
+# Command-line argument parsing
+parser = argparse.ArgumentParser(description='COCO Hierarchical Classification Training')
+parser.add_argument('--alpha', type=float, required=True, help='Alpha value for the model')
+args = parser.parse_args()
 
 # Populate Taxonomy
 importer = JsonImporter()
-with open('data/coco.json', 'r') as f:
+with open('/mnt/RAID/projects/FjordVision/data/coco.json', 'r') as f:
     root = importer.read(f)
 
 classes_file = '/mnt/RAID/datasets/coco/classes.txt'
@@ -49,8 +54,6 @@ for node in root.descendants:
 
 num_classes_hierarchy = [rank_counts['binary'], rank_counts['category'], rank_counts['subcategory'], rank_counts['object']]
 num_additional_features = 3
-
-# Define num_levels here based on the length of num_classes_hierarchy
 num_levels = len(num_classes_hierarchy)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,24 +68,28 @@ train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-# Specify the initial value of alpha and whether it should be learnable
-initial_alpha = 0.5  # Example initial value
-alpha_learnable = False  # Set True if alpha should be learnable, False otherwise
+# Alpha value from argument
+initial_alpha = args.alpha
+alpha_learnable = False
 
 # Training Preparation
 num_epochs = 100
 best_val_loss = float('inf')
 patience = 5
 patience_counter = 0
-# Update the instantiation with new parameters
+
 criterion = HierarchicalCrossEntropyLoss(num_levels=len(num_classes_hierarchy), alpha=initial_alpha, learnable_alpha=alpha_learnable, device=device)
 optimizer = torch.optim.Adam(list(model.parameters()) + list(criterion.parameters()), lr=0.001)
 scheduler = MultiStepLR(optimizer, milestones=[20, 40, 60, 80], gamma=0.1)
 
-# Logging Setup
-with open('logs-coco/model_alpha_05.csv', mode='w', newline='') as file:
+# Dynamic file names based on alpha value
+log_filename = f'logs-coco/model_alpha_{args.alpha:.2f}.csv'
+best_model_filename = f'models/weights/coco_best_model_alpha_{args.alpha:.2f}.pth'
+last_model_filename = f'models/weights/coco_last_model_alpha_{args.alpha:.2f}.pth'
+
+# Training and Validation Loop with Logging
+with open(log_filename, mode='w', newline='') as file:
     writer = csv.writer(file)
-    # Adjust headers to include lambda weights; assume max number of levels is known
     headers = ['Epoch', 'Training Loss', 'Validation Loss', 'Alpha'] + [f'Lambda Weight Lvl {i+1}' for i in range(num_levels)]
     writer.writerow(headers)
 
@@ -103,7 +110,6 @@ with open('logs-coco/model_alpha_05.csv', mode='w', newline='') as file:
 
             train_loss += loss.item()
 
-        # Validation
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
@@ -118,21 +124,15 @@ with open('logs-coco/model_alpha_05.csv', mode='w', newline='') as file:
 
         train_loss /= len(train_loader)
         val_loss /= len(val_loader)
-                
-        # After training and validation for the epoch, log the details including lambda weights
-        lambda_weights_list = criterion.lambda_weights.cpu().detach().numpy().tolist()  # Convert lambda_weights tensor to a list
-        log_row = [epoch+1, 
-                   train_loss, 
-                   val_loss, 
-                   criterion.alpha.item()] + lambda_weights_list
-        
+
+        lambda_weights_list = criterion.lambda_weights.cpu().detach().numpy().tolist()
+        log_row = [epoch+1, train_loss, val_loss, criterion.alpha.item()] + lambda_weights_list
         writer.writerow(log_row)
         print(f"Epoch: {epoch+1}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}, Alpha: {criterion.alpha.item():.4f}, Lambda Weights: {lambda_weights_list}")
 
-        # Early stopping and model checkpointing
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), 'models/weights/coco_best_model_alpha_05.pth')
+            torch.save(model.state_dict(), best_model_filename)
             patience_counter = 0
         else:
             patience_counter += 1
@@ -142,5 +142,4 @@ with open('logs-coco/model_alpha_05.csv', mode='w', newline='') as file:
 
         scheduler.step()
 
-        # Save the last model
-        torch.save(model.state_dict(), 'models/weights/coco_last_model_alpha_05.pth')
+        torch.save(model.state_dict(), last_model_filename)
