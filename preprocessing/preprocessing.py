@@ -78,10 +78,13 @@ def load_ground_truth_mask_xyn(label_file):
     Load ground truth mask data from a label file and return in mask.xyn format.
 
     :param label_file: Path to the label file.
-    :param img_shape: Shape of the corresponding image.
     :return: List of tuples (class_index, mask_xyn).
     """
     gt_masks_xyn = []
+    if not os.path.exists(label_file):
+        print(f"Warning: Label file not found: {label_file}")
+        return gt_masks_xyn  # Return an empty list if the file doesn't exist
+
     with open(label_file, 'r') as file:
         for line in file:
             elements = line.strip().split()

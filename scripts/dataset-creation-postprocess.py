@@ -2,16 +2,19 @@ import os
 import random
 import pandas as pd
 from ultralytics import YOLO
-from preprocessing.preprocessing import process_result, append_to_parquet_file
 from anytree import Node
 import torch
 import gc  # Garbage collector interface
 from anytree.importer import JsonImporter
+import sys
+sys.path.append('/mnt/RAID/projects/FjordVision/')
+
+from preprocessing.preprocessing import process_result, append_to_parquet_file
 
 importer = JsonImporter()
-root = importer.read(open('data/ontology.json', 'r'))
+root = importer.read(open('/mnt/RAID/projects/FjordVision/data/coco.json', 'r'))
 
-classes_file = '/mnt/RAID/datasets/label-studio/fjord/classes.txt'
+classes_file = '/mnt/RAID/datasets/coco/classes.txt'
 
 species_names = []
 with open(classes_file, 'r') as file:
@@ -22,14 +25,15 @@ class_names = [node.name for node in root.descendants if node.rank == 'class']
 binary_names = [node.name for node in root.descendants if node.rank == 'binary']
 
 # Path to the image directory and model weights
-IMGDIR_PATH = "/mnt/RAID/datasets/label-studio/fjord/images/"
-MODEL_PATH = "runs/segment/Yolov8n-seg-train/weights/best.pt"
-classes_file = '/mnt/RAID/datasets/label-studio/fjord/classes.txt'
-OBJDIR = './segmented-objects/'
-CHECKPOINT_FILE = './checkpoint.txt'
+IMGDIR_PATH = "/mnt/RAID/datasets/coco/images/val2017/"
+MODEL_PATH = "yolov8n-seg.pt"
+classes_file = '/mnt/RAID/datasets/coco/classes.txt'
+OBJDIR = '/mnt/RAID/projects/FjordVision/coco-segmented-objects/'
+CHECKPOINT_FILE = os.path.join(OBJDIR, 'checkpoint.txt')
+
+# Ensure the directory exists
 os.makedirs(OBJDIR, exist_ok=True)
 
-# Helper function to manage checkpoints
 def manage_checkpoint(read=False, update_index=None):
     if read:
         try:
@@ -41,7 +45,8 @@ def manage_checkpoint(read=False, update_index=None):
         with open(CHECKPOINT_FILE, 'w') as file:
             file.write(str(update_index))
 
-total_images = 17000
+
+total_images = 5000
 
 image_files = random.sample(os.listdir(IMGDIR_PATH), total_images)
 image_paths = [os.path.join(IMGDIR_PATH, img) for img in image_files if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
@@ -75,4 +80,4 @@ def process_and_store_batches(image_paths, batch_size, parquet_file_name):
         torch.cuda.empty_cache()
         gc.collect()  # Force garbage collection
 
-process_and_store_batches(image_paths, 500, 'segmented-objects-dataset.parquet')
+process_and_store_batches(image_paths, 200, 'coco-segmented-objects-dataset.parquet')
