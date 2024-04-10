@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from .branch_cnn import BranchCNN
 
 class ChannelAttention(nn.Module):
@@ -13,13 +14,12 @@ class ChannelAttention(nn.Module):
             nn.Linear(num_channels // reduction_ratio, num_channels, bias=False),
             nn.Sigmoid()
         )
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         avg_out = self.fc(self.avg_pool(x).view(x.size(0), -1))
         max_out = self.fc(self.max_pool(x).view(x.size(0), -1))
         out = avg_out + max_out
-        return self.sigmoid(out).view(x.size(0), x.size(1), 1, 1) * x
+        return out.view(x.size(0), x.size(1), 1, 1) * x
 
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
@@ -38,47 +38,48 @@ class HierarchicalCNN(nn.Module):
     def __init__(self, num_classes_hierarchy, num_additional_features, output_size=(5, 5)):
         super(HierarchicalCNN, self).__init__()
 
+        # Increasing depth and width
         self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 30, kernel_size=5, padding=2),
-            nn.BatchNorm2d(30),
+            nn.Conv2d(3, 64, kernel_size=5, padding=2),
+            nn.BatchNorm2d(64),
             nn.LeakyReLU(0.01, inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            ChannelAttention(30),
+            ChannelAttention(64),
             SpatialAttention(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
         )
-        
+
         self.conv2 = nn.Sequential(
-            nn.Conv2d(30, 60, kernel_size=5, padding=2),
-            nn.BatchNorm2d(60),
+            nn.Conv2d(64, 128, kernel_size=5, padding=2),
+            nn.BatchNorm2d(128),
             nn.LeakyReLU(0.01, inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            ChannelAttention(60),
+            ChannelAttention(128),
             SpatialAttention(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
         self.conv3 = nn.Sequential(
-            nn.Conv2d(60, 100, kernel_size=3, padding=1),
-            nn.BatchNorm2d(100),
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
             nn.LeakyReLU(0.01, inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            ChannelAttention(100),
+            ChannelAttention(256),
             SpatialAttention(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
         self.conv4 = nn.Sequential(
-            nn.Conv2d(100, 150, kernel_size=3, padding=1),
-            nn.BatchNorm2d(150),
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
             nn.LeakyReLU(0.01, inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            ChannelAttention(150),
+            ChannelAttention(512),
             SpatialAttention(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
         self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
         self.adaptive_pool = nn.AdaptiveAvgPool2d(output_size)
 
         self.branches = nn.ModuleList([
-            BranchCNN(output_size[0] * output_size[1] * 150, num_classes, num_additional_features)
+            BranchCNN(output_size[0] * output_size[1] * 512, num_classes, num_additional_features)
             for num_classes in num_classes_hierarchy
         ])
 
