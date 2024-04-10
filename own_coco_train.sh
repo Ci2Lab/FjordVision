@@ -13,5 +13,5 @@ do
     echo "Running hierarchical classification training with alpha = $alpha_value"
     
     # Run the Python script with the alpha argument
-    python3 scripts/coco-hierarchical-classification-training.py --alpha $alpha_value
+    python3 scripts/hierarchical-classification-training.py --alpha $alpha_value
 done

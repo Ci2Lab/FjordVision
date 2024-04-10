@@ -11,15 +11,15 @@ class BranchCNN(nn.Module):
         self.fc_layers = nn.Sequential(
             nn.Linear(combined_features_size, 1024),
             nn.BatchNorm1d(1024),  # Adding Batch Normalization
-            nn.ReLU(True),
+            nn.LeakyReLU(0.01, inplace=True),
             nn.Dropout(0.5),
             nn.Linear(1024, 512),
             nn.BatchNorm1d(512),  # Adding Batch Normalization
-            nn.ReLU(True),
+            nn.LeakyReLU(0.01, inplace=True),
             nn.Dropout(0.5),
             nn.Linear(512, 256),
             nn.BatchNorm1d(256),  # Adding Batch Normalization
-            nn.ReLU(True),
+            nn.LeakyReLU(0.01, inplace=True),
             nn.Dropout(0.5),
             nn.Linear(256, num_classes),
         )
@@ -27,9 +27,9 @@ class BranchCNN(nn.Module):
         # Enhanced additional feature layers
         self.additional_feature_layers = nn.Sequential(
             nn.Linear(num_additional_features, num_additional_features * 2),  # Expansion
-            nn.ReLU(True),
+            nn.LeakyReLU(0.01, inplace=True),
             nn.Linear(num_additional_features * 2, num_additional_features * 2),  # Maintaining the expanded size
-            nn.ReLU(True),
+            nn.LeakyReLU(0.01, inplace=True),
         )
 
     def forward(self, x, additional_features):
