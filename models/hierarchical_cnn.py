@@ -2,27 +2,30 @@ import torch
 import torch.nn as nn
 from .branch_cnn import BranchCNN
 
+class Mish(nn.Module):
+    def forward(self, x):
+        return x * torch.tanh(nn.functional.softplus(x))
+
 class ChannelAttention(nn.Module):
-    def __init__(self, num_channels, reduction_ratio=1):
+    def __init__(self, num_channels, reduction_ratio=4):  # Adjusted reduction ratio
         super(ChannelAttention, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
         self.fc = nn.Sequential(
             nn.Linear(num_channels, num_channels // reduction_ratio, bias=False),
-            nn.LeakyReLU(inplace=True),
+            Mish(),  # Using Mish activation
             nn.Linear(num_channels // reduction_ratio, num_channels, bias=False),
             nn.Sigmoid()
         )
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         avg_out = self.fc(self.avg_pool(x).view(x.size(0), -1))
         max_out = self.fc(self.max_pool(x).view(x.size(0), -1))
         out = avg_out + max_out
-        return self.sigmoid(out).view(x.size(0), x.size(1), 1, 1) * x
+        return nn.Sigmoid()(out).view(x.size(0), x.size(1), 1, 1) * x
 
 class SpatialAttention(nn.Module):
-    def __init__(self, kernel_size=11):
+    def __init__(self, kernel_size=5):  # Adjusted kernel size
         super(SpatialAttention, self).__init__()
         self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=kernel_size // 2, bias=False)
         self.sigmoid = nn.Sigmoid()
@@ -39,9 +42,9 @@ class HierarchicalCNN(nn.Module):
         super(HierarchicalCNN, self).__init__()
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 30, kernel_size=5, padding=2),
+            nn.Conv2d(3, 30, kernel_size=5, padding=3),  # Adjusted padding for the kernel size
             nn.BatchNorm2d(30),
-            nn.LeakyReLU(0.01, inplace=True),
+            Mish(),  # Using Mish activation
             nn.MaxPool2d(kernel_size=2, stride=2),
             ChannelAttention(30),
             SpatialAttention(),
@@ -50,7 +53,7 @@ class HierarchicalCNN(nn.Module):
         self.conv2 = nn.Sequential(
             nn.Conv2d(30, 60, kernel_size=5, padding=2),
             nn.BatchNorm2d(60),
-            nn.LeakyReLU(0.01, inplace=True),
+            Mish(),  # Using Mish activation
             nn.MaxPool2d(kernel_size=2, stride=2),
             ChannelAttention(60),
             SpatialAttention(),
@@ -59,7 +62,7 @@ class HierarchicalCNN(nn.Module):
         self.conv3 = nn.Sequential(
             nn.Conv2d(60, 100, kernel_size=3, padding=1),
             nn.BatchNorm2d(100),
-            nn.LeakyReLU(0.01, inplace=True),
+            Mish(),  # Using Mish activation
             nn.MaxPool2d(kernel_size=2, stride=2),
             ChannelAttention(100),
             SpatialAttention(),
@@ -68,7 +71,7 @@ class HierarchicalCNN(nn.Module):
         self.conv4 = nn.Sequential(
             nn.Conv2d(100, 150, kernel_size=3, padding=1),
             nn.BatchNorm2d(150),
-            nn.LeakyReLU(0.01, inplace=True),
+            Mish(),  # Using Mish activation
             nn.MaxPool2d(kernel_size=2, stride=2),
             ChannelAttention(150),
             SpatialAttention(),

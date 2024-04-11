@@ -14,7 +14,7 @@ sys.path.append('/mnt/RAID/projects/FjordVision/')
 from models.hierarchical_cnn import HierarchicalCNN
 from utils.custom_dataset import CustomDataset
 from utils.hierarchical_loss import HierarchicalCrossEntropyLoss
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # Command-line argument parsing
 parser = argparse.ArgumentParser(description='Hierarchical Classification Training')
@@ -64,9 +64,10 @@ train_dataset = CustomDataset(train_df, object_names, subcategory_names, categor
 val_dataset = CustomDataset(val_df, object_names, subcategory_names, category_names, binary_names, root)
 test_dataset = CustomDataset(test_df, object_names, subcategory_names, category_names, binary_names, root)
 
-train_loader = DataLoader(train_dataset, batch_size=50, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=50, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=50, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=50, shuffle=True, num_workers=8)
+val_loader = DataLoader(val_dataset, batch_size=50, shuffle=False, num_workers=8)
+test_loader = DataLoader(test_dataset, batch_size=50, shuffle=False, num_workers=8)
+
 
 # Alpha value from argument
 initial_alpha = args.alpha
@@ -88,8 +89,8 @@ all_parameters = list(model.parameters()) + list(criterion.parameters()) if alph
 optimizer = torch.optim.AdamW(all_parameters, lr=0.001, weight_decay=0.01)
 
 # Adjust the scheduler's milestones considering the usual early stopping point
-# Setting milestones at earlier epochs since training often stops before 30 epochs
-scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 25], gamma=0.1)
+# Inside your training script, after initializing the optimizer
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
 
 # Dynamic file names based on alpha value
 log_filename = f'logs/model_alpha_{args.alpha:.2f}.csv'
@@ -149,6 +150,7 @@ with open(log_filename, mode='w', newline='') as file:
                 print("Early stopping triggered.")
                 break
 
-        scheduler.step()
+        # After computing validation loss at the end of an epoch
+        scheduler.step(val_loss)
 
         torch.save(model.state_dict(), last_model_filename)
