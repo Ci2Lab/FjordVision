@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from .branch_cnn import BranchCNN
 
 class ChannelAttention(nn.Module):
@@ -38,7 +37,6 @@ class HierarchicalCNN(nn.Module):
     def __init__(self, num_classes_hierarchy, num_additional_features, output_size=(5, 5)):
         super(HierarchicalCNN, self).__init__()
 
-        # Increasing depth and width
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=5, padding=2),
             nn.BatchNorm2d(64),

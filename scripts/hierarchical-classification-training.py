@@ -64,9 +64,9 @@ train_dataset = CustomDataset(train_df, object_names, subcategory_names, categor
 val_dataset = CustomDataset(val_df, object_names, subcategory_names, category_names, binary_names, root)
 test_dataset = CustomDataset(test_df, object_names, subcategory_names, category_names, binary_names, root)
 
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=50, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=50, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=50, shuffle=False)
 
 # Alpha value from argument
 initial_alpha = args.alpha
@@ -75,7 +75,7 @@ alpha_learnable = False
 # Training Preparation
 num_epochs = 100
 best_val_loss = float('inf')
-patience = 5
+patience = 20
 patience_counter = 0
 
 # Define the criterion
