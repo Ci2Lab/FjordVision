@@ -3,7 +3,7 @@ import torch.nn as nn
 from .branch_cnn import BranchCNN
 
 class ChannelAttention(nn.Module):
-    def __init__(self, num_channels, reduction_ratio=16):
+    def __init__(self, num_channels, reduction_ratio=1):
         super(ChannelAttention, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
@@ -22,7 +22,7 @@ class ChannelAttention(nn.Module):
         return self.sigmoid(out).view(x.size(0), x.size(1), 1, 1) * x
 
 class SpatialAttention(nn.Module):
-    def __init__(self, kernel_size=7):
+    def __init__(self, kernel_size=11):
         super(SpatialAttention, self).__init__()
         self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=kernel_size // 2, bias=False)
         self.sigmoid = nn.Sigmoid()

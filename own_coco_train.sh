@@ -5,7 +5,7 @@ cd /mnt/RAID/projects/FjordVision
 source fjordvision/bin/activate
 
 # Define a list of alpha values
-alpha_values=(0 0.2 0.5 0.8 1)
+alpha_values=(0.5)
 
 # Loop through each alpha value
 for alpha_value in "${alpha_values[@]}"
