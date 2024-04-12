@@ -5,13 +5,12 @@ cd /mnt/RAID/projects/FjordVision
 source fjordvision/bin/activate
 
 # Define a list of alpha values
-alpha_values=(0.5)
+alpha_values=(0 0.2 0.5 0.8 1)
 
 # Loop through each alpha value
 for alpha_value in "${alpha_values[@]}"
 do
-    echo "Running hierarchical classification training with alpha = $alpha_value"
-    
-    # Run the Python script with the alpha argument
-    python3 scripts/hierarchical-classification-training.py --alpha $alpha_value
+    echo "Running COCO hierarchical classification training with alpha = $alpha_value"
+    # Run the COCO Python script with the alpha argument
+    python3 scripts/coco-hierarchical-classification-training.py --alpha $alpha_value
 done
