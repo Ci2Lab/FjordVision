@@ -14,7 +14,7 @@ sys.path.append('/mnt/RAID/projects/FjordVision/')
 from models.hierarchical_cnn import HierarchicalCNN
 from utils.custom_dataset import CustomDatasetCoco
 from utils.hierarchical_loss import HierarchicalCrossEntropyLoss
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # Command-line argument parsing
 parser = argparse.ArgumentParser(description='COCO Hierarchical Classification Training')
@@ -75,12 +75,20 @@ alpha_learnable = False
 # Training Preparation
 num_epochs = 100
 best_val_loss = float('inf')
-patience = 5
+patience = 20  # Adjusted patience
 patience_counter = 0
 
+# Define the criterion
 criterion = HierarchicalCrossEntropyLoss(num_levels=len(num_classes_hierarchy), alpha=initial_alpha, learnable_alpha=alpha_learnable, device=device)
-optimizer = torch.optim.Adam(list(model.parameters()) + list(criterion.parameters()), lr=0.001)
-scheduler = MultiStepLR(optimizer, milestones=[20, 40, 60, 80], gamma=0.1)
+
+# Combine parameters from both model and criterion if criterion has learnable parameters
+all_parameters = list(model.parameters()) + list(criterion.parameters()) if alpha_learnable else model.parameters()
+
+# Initialize the optimizer with both model and potentially criterion's parameters
+optimizer = torch.optim.AdamW(all_parameters, lr=0.001, weight_decay=0.01)
+
+# Scheduler adjusted to use ReduceLROnPlateau
+scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
 
 # Dynamic file names based on alpha value
 log_filename = f'logs-coco/model_alpha_{args.alpha:.2f}.csv'
@@ -140,6 +148,6 @@ with open(log_filename, mode='w', newline='') as file:
                 print("Early stopping triggered.")
                 break
 
-        scheduler.step()
+        scheduler.step(val_loss)
 
         torch.save(model.state_dict(), last_model_filename)
