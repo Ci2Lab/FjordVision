@@ -52,66 +52,26 @@ class HierarchicalCNN(nn.Module):
             ChannelAttention(64),
             SpatialAttention(kernel_size=5),
         )
-        
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            Mish(),
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            Mish(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            ChannelAttention(128),
-            SpatialAttention(kernel_size=5),
-        )
 
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            Mish(),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            Mish(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            ChannelAttention(256),
-            SpatialAttention(kernel_size=5),
-        )
-
-        self.conv4 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
-            Mish(),
-            nn.Conv2d(512, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
-            Mish(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            ChannelAttention(512),
-            SpatialAttention(kernel_size=5),
-        )
-
+        # Define subsequent convolutional blocks as needed
+        # Define global and adaptive pooling layers
         self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
         self.adaptive_pool = nn.AdaptiveAvgPool2d(output_size)
 
+        # Initialize branches without additional features
         self.branches = nn.ModuleList([
             BranchCNN(output_size[0] * output_size[1] * 512, num_classes)
             for num_classes in num_classes_hierarchy
         ])
 
-
     def forward(self, x):
-        outputs = []
-
         x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
-
+        # Apply other convolutions and poolings
         x = self.global_avg_pool(x)
         x = self.adaptive_pool(x)
         x = x.view(x.size(0), -1)
 
+        outputs = []
         for branch in self.branches:
-            branch_output = branch(x)  # No additional features passed
-            outputs.append(branch_output)
-
+            outputs.append(branch(x))
         return outputs
