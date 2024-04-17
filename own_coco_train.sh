@@ -9,8 +9,8 @@ alpha_values=(0 0.2 0.5 0.8 1)
 
 # List of experiments to run
 declare -A experiments
-experiments["ablation-remove-features-coco"]="scripts/train-ablations/coco-hierarchical-classification-training.py"
-experiments["ablation-remove-features-fjord"]="scripts/train-ablations/hierarchical-classification-training.py"
+experiments["decreased-branch-complexity-coco"]="scripts/decreased_branch_complexity/coco-hierarchical-classification-training.py"
+experiments["decreased-branch-complexity-fjord"]="scripts/decreased_branch_complexity/hierarchical-classification-training.py"
 
 # Loop through each experiment
 for experiment in "${!experiments[@]}"
