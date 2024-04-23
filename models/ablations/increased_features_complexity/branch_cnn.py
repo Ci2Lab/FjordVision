@@ -11,7 +11,7 @@ class BranchCNN(nn.Module):
         super(BranchCNN, self).__init__()
         
         # Calculating the combined features size
-        combined_features_size = num_in_features + num_additional_features * 3  # Adjusted to *3 for increased complexity
+        combined_features_size = num_in_features + num_additional_features * 4
         
         # Fully connected layers for processing combined features
         self.fc_layers = nn.Sequential(
@@ -29,7 +29,7 @@ class BranchCNN(nn.Module):
             nn.Dropout(0.5),
             nn.Linear(256, num_classes),
         )
-        
+
         # Additional layers for processing the extra features
         self.additional_feature_layers = nn.Sequential(
             nn.Linear(num_additional_features, num_additional_features * 2),

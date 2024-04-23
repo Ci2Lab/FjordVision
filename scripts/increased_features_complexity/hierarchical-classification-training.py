@@ -13,7 +13,7 @@ import os  # Import os to manage file paths
 sys.path.append('/mnt/RAID/projects/FjordVision/')
 
 # Update the import statement to the correct path
-from models.ablations.decreased_branch_complexity.hierarchical_cnn import HierarchicalCNN
+from models.ablations.increased_features_complexity.hierarchical_cnn import HierarchicalCNN
 from utils.custom_dataset import CustomDataset
 from utils.hierarchical_loss import HierarchicalCrossEntropyLoss
 

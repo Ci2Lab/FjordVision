@@ -12,7 +12,7 @@ from collections import defaultdict
 # Ensure the project directory is in the system path
 sys.path.append('/mnt/RAID/projects/FjordVision/')
 
-from models.ablations.decreased_branch_complexity.hierarchical_cnn import HierarchicalCNN
+from models.ablations.increased_features_complexity.hierarchical_cnn import HierarchicalCNN
 from utils.custom_dataset import CustomDatasetCoco
 from utils.hierarchical_loss import HierarchicalCrossEntropyLoss
 

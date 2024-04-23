@@ -3,11 +3,11 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 import csv
+import sys
+import os
 from sklearn.model_selection import train_test_split
 from anytree.importer import JsonImporter
 from collections import defaultdict
-import sys
-import os
 
 # Ensure the project directory is in the system path
 sys.path.append('/mnt/RAID/projects/FjordVision/')
@@ -26,8 +26,13 @@ with open('/mnt/RAID/projects/FjordVision/data/coco.json', 'r') as f:
     root = importer.read(f)
 
 classes_file = '/mnt/RAID/datasets/coco/classes.txt'
-object_names = [line.strip() for line in open(classes_file, 'r')]
 
+object_names = []
+with open(classes_file, 'r') as file:
+    object_names = [line.strip() for line in file]
+
+
+# Classify nodes by category, subcategory, etc., specific to COCO
 category_names, subcategory_names, binary_names = [], [], []
 for node in root.descendants:
     if node.rank == 'subcategory':
@@ -48,8 +53,8 @@ for node in root.descendants:
     rank_counts[node.rank] += 1
 
 num_classes_hierarchy = [rank_counts['binary'], rank_counts['category'], rank_counts['subcategory'], rank_counts['object']]
+num_additional_features = 3
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-num_additional_features = 3  # Adjust this according to your model's definition if needed.
 model = HierarchicalCNN(num_classes_hierarchy, num_additional_features).to(device)
 
 # Data loaders for COCO
@@ -82,7 +87,8 @@ last_model_filename = os.path.join(weights_directory, f'last_model_alpha_{args.a
 # Training and Validation Loop
 with open(log_filename, mode='w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerow(['Epoch', 'Training Loss', 'Validation Loss', 'Alpha'])
+    headers = ['Epoch', 'Training Loss', 'Validation Loss', 'Alpha']
+    writer.writerow(headers)
 
     for epoch in range(num_epochs):
         model.train()
@@ -92,7 +98,7 @@ with open(log_filename, mode='w', newline='') as file:
             species_index, genus_index, class_index, binary_index = species_index.to(device), genus_index.to(device), class_index.to(device), binary_index.to(device)
             
             optimizer.zero_grad()
-            outputs = model(images, conf, iou, pred_species)  # Updated to include all parameters
+            outputs = model(images, conf, iou, pred_species)
             targets = [binary_index, class_index, genus_index, species_index]
             loss = criterion(outputs, targets)
             loss.backward()
@@ -105,15 +111,19 @@ with open(log_filename, mode='w', newline='') as file:
         with torch.no_grad():
             for images, conf, iou, pred_species, species_index, genus_index, class_index, binary_index in val_loader:
                 images, conf, iou, pred_species = images.to(device), conf.to(device), iou.to(device), pred_species.to(device)
-                outputs = model(images, conf, iou, pred_species)  # Updated to include all parameters
+                species_index, genus_index, class_index, binary_index = species_index.to(device), genus_index.to(device), class_index.to(device), binary_index.to(device)
+                
+                outputs = model(images, conf, iou, pred_species)
                 targets = [binary_index, class_index, genus_index, species_index]
                 loss = criterion(outputs, targets)
                 val_loss += loss.item()
 
-        train_loss_avg = train_loss / len(train_loader)
-        val_loss_avg = val_loss / len(val_loader)
-        writer.writerow([epoch + 1, train_loss_avg, val_loss_avg, args.alpha])
-        print(f"Epoch: {epoch+1}, Training Loss: {train_loss_avg:.4f}, Validation Loss: {val_loss_avg:.4f}, Alpha: {args.alpha:.4f}")
+        train_loss /= len(train_loader)
+        val_loss /= len(val_loader)
+
+        log_row = [epoch+1, train_loss, val_loss, args.alpha]
+        writer.writerow(log_row)
+        print(f"Epoch: {epoch+1}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}, Alpha: {args.alpha:.4f}")
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -127,5 +137,3 @@ with open(log_filename, mode='w', newline='') as file:
 
         scheduler.step(val_loss)
         torch.save(model.state_dict(), last_model_filename)
-
-print("Training complete.")
