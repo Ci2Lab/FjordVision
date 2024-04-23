@@ -13,6 +13,10 @@ experiments["attention-removed-coco"]="scripts/attention_removed/coco-hierarchic
 experiments["attention-removed"]="scripts/attention_removed/hierarchical-classification-training.py"
 experiments["increased-features-complexity-coco"]="scripts/increased_features_complexity/coco-hierarchical-classification-training.py"
 experiments["increased-features-complexity"]="scripts/increased_features_complexity/hierarchical-classification-training.py"
+experiments["decreased-branch-complexity-coco"]="scripts/decreased_branch_complexity/coco-hierarchical-classification-training.py"
+experiments["decreased-branch-complexity"]="scripts/decreased_branch_complexity/hierarchical-classification-training.py"
+experiments["remove-features-coco"]="scripts/remove_features/coco-hierarchical-classification-training.py"
+experiments["remove-features"]="scripts/remove_features/hierarchical-classification-training.py"
 
 # Loop through each experiment
 for experiment in "${!experiments[@]}"
