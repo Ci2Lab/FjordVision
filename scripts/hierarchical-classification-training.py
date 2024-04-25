@@ -9,7 +9,7 @@ from collections import defaultdict
 import sys
 
 # Adding the project directory to the system path
-sys.path.append('/mnt/RAID/projects/FjordVision/')
+sys.path.append('.')
 
 from models.hierarchical_cnn import HierarchicalCNN
 from utils.custom_dataset import CustomDataset
@@ -23,10 +23,10 @@ args = parser.parse_args()
 
 # Populate Taxonomy
 importer = JsonImporter()
-with open('/mnt/RAID/projects/FjordVision/data/ontology.json', 'r') as f:
+with open('datasets/ontology.json', 'r') as f:
     root = importer.read(f)
 
-classes_file = '/mnt/RAID/datasets/The Fjord Dataset/fjord/classes.txt'
+classes_file = 'datasets/The Fjord Dataset/fjord/classes.txt'
 
 object_names = []
 with open(classes_file, 'r') as file:
@@ -42,7 +42,7 @@ for node in root.descendants:
         binary_names.append(node.name)
 
 # Read Dataset
-df = pd.read_parquet('/mnt/RAID/projects/FjordVision/data/segmented-objects-dataset.parquet')
+df = pd.read_parquet('datasets/segmented-objects-dataset.parquet')
 
 train_val_df, test_df = train_test_split(df, test_size=0.3, random_state=42)
 train_df, val_df = train_test_split(train_val_df, test_size=0.5, random_state=42)
@@ -94,8 +94,8 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', fa
 
 # Dynamic file names based on alpha value
 log_filename = f'logs/model_alpha_{args.alpha:.2f}.csv'
-best_model_filename = f'models/weights/best_model_alpha_{args.alpha:.2f}.pth'
-last_model_filename = f'models/weights/last_model_alpha_{args.alpha:.2f}.pth'
+best_model_filename = f'datasets/hierarchical-model-weights/weights/best_model_alpha_{args.alpha:.2f}.pth'
+last_model_filename = f'datasets/hierarchical-model-weights/weights/last_model_alpha_{args.alpha:.2f}.pth'
 
 # Training and Validation Loop with Logging
 with open(log_filename, mode='w', newline='') as file:
