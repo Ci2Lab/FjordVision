@@ -1,11 +1,26 @@
+# Ignore environment
 fjordvision/*
+
+# Ignore Yolo v8 experimental data
 runs/*
+
+# Ignore pytorch weights, data fles and weights
 *.pt
-segmented-objects/*
 *.parquet
 *.pth
+
+# Ignore class activations
 activations/*
 class-activations/*
-coco-segmented-objects/*
+
+# Ignore pyc files
 *.pyc
-models/weights/*
+
+# Ignore data that must be downloaded
+datasets/coco
+datasets/segmented-objects
+datasets/hierarcical-models-weights
+datasets/The Fjord Dataset/
+datasets/coco-segmented-objects
+datasets/hierarchical-model-weights
+datasets/pre-trained-models
