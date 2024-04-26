@@ -97,6 +97,18 @@ class HierarchicalCNN(nn.Module):
             for num_classes in num_classes_hierarchy
         ])
 
+    def register_hooks(self):
+            self.activations = []
+
+            def hook_fn(module, input, output):
+                self.activations.append(output.detach())
+
+            # You might want to register hooks after specific layers:
+            self.conv1[-1].register_forward_hook(hook_fn)  # After SpatialAttention in conv1
+            self.conv2[-1].register_forward_hook(hook_fn)  # After SpatialAttention in conv2
+            self.conv3[-1].register_forward_hook(hook_fn)  # After SpatialAttention in conv3
+            self.conv4[-1].register_forward_hook(hook_fn)  # After SpatialAttention in conv4
+
     def forward(self, x, conf, iou, pred_species):
         outputs = []
         additional_features = torch.cat((conf.view(-1, 1), iou.view(-1, 1), pred_species.view(-1, 1)), dim=1)
