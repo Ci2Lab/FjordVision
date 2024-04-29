@@ -23,11 +23,6 @@ The FjordVision project explores the impact of various alpha regularization para
 - [Installation](#installation)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
-- [Experiments and Reproducibility](#experiments-and-reproducibility)
-- [Results](#results)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
 
 ## Installation
 To set up your environment for running these experiments, follow these steps:
