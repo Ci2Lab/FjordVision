@@ -1,7 +1,19 @@
-# FjordVision Hierarchical Classification Models
+# FjordVision Hierarchical Classification Model
 
+This github repo is the code implementation of our paper
+*Marine Vegetation Analysis in Esefjorden, Norway using Hierarchical CNN-based Classification*.
+
+## Demo: Taxonomic Classification at Different Levels
+
+Explore our hierarchical classification models across various taxonomic ranks:
+
+### Species Level
 ![Species GIF](demo/output-species.gif)
+
+### Class level
 ![Species GIF](demo/output-class.gif)
+
+### Binary level
 ![Species GIF](demo/output-binary.gif)
 
 ## Description
@@ -34,46 +46,62 @@ source fjordvision/bin/activate
 pip install -r requirements.txt
 ```
 
-## Usage
+## Usage with pretrained models and our experimental data
 
-This section outlines the necessary steps to utilize the project for training new models as well as testing with pre-trained models once available.
+This section outlines the necessary steps to utilize the project for replicating our methods as well as running our code with pre-trained models and experimental data.
 
-### Train and Load YOLO V8 Models
+### Download datasets and experimental data
 
-#### Download and Prepare the Dataset
+Run the script
 
-The Fjord Dataset is crucial for training the YOLO V8 models. The script provided automates the process of downloading, unzipping, and preparing the dataset for training, ensuring all necessary files are correctly set up.
+```bash
+./setup-and-download.sh
+```
+To download the datasets and experimental data that the rest of code uses.
+This will download several things.
 
-#### Training the Models
+- **The Fjord Dataset** which contains 17000 annotated images
+in the [Yolo txt format](https://docs.ultralytics.com/datasets/segment/).
+- Weights of Yolo v8 for the COCO dataset and The Fjord Dataset
+- Datasets used for training our hierarcical classifiers. These are stored as a 
+  combination of *parquet* containing labels and folders of segmented images.
+- Weights of trained hierarcical classification models. 
+- The validation set of the COCO dataset. 
 
-To train YOLO V8 models using the prepared Fjord Dataset, follow these simple steps:
+### Run our model on video
 
-1. **Download and Prepare the Dataset**: Ensure the dataset is ready by running the script which handles dataset preparation and training initiation:
+If you want to run inference with our model on a video stream use the following
+command
 
-    ```bash
-    ./train-yolov8.sh
-    ```
+```bash
+python3 scripts/run_classification_stream.py --display_level="species" --output_path="demo/output-species.mp4"
+```
 
-    This script performs the following actions:
-    - Checks if the dataset is already present.
-    - Downloads the dataset ZIP file if it's not present.
-    - Unzips the dataset to the correct directory.
-    - Checks if the `fjord.yaml` is in the correct location.
-    - Initiates the training process using the dataset.
+Available hierarcical levels are "species", "genus", "class", "binary".
 
-2. **Running the Training Script**: The above command will automatically continue to train the models using the YOLO V8 configuration as specified in the Python script located at `scripts/train-yolov8.py`.
+### Run experiments and gather F1 scores
 
-    Detailed logs and outputs from the training process will be saved in designated directories, allowing you to monitor the progress and results of the training.
+This is done by running the notebook `run-experiments.ipyn`
 
-**Training will take a substantial time depending on your hardware**. To start using already trained models. Consider using pre-trained models instead described in the next section.
+### Visualise activations and class activiations
 
-### Download Trained Models and Datasets
+This is done by running the notebook `hierarcical-cnn-visualisation.ipyn`
 
-This section will provide information on how you can obtain our trained models and datasets for testing our models on video streams or further analysis.
+## Project Structure
 
-**Note:** *(Future section to be expanded upon availability of download links for models and additional datasets.)*
+- **datasets/**: Contains the Fjord and COCO datasets, including segmented images and model weights.
+- **demo/**: Demo videos and GIFs for visualizing model outputs.
+- **fjordvision/**: Python virtual enviromnent
+- **models/**: Definitions of the hierarchical models.
+- **preprocessing/**: Scripts for data preprocessing, dataset creation and model training.
+- **scripts/**: Utility scripts for setting up the environment, downloading data, and running the models.
+- **utils/**: Helper functions and utilities for model operation and data manipulation.
+- **experimental-data.ipynb**: Jupyter notebook for initial data analysis.
+- **hierarchical-cnn-visualisation.ipynb**, **run-experiments.ipynb**: Notebooks for running experiments and visualizing model performance.
 
-### Using Pre-trained Models
 
-Once pre-trained models are available, this section will guide you on how to download and use them, including detailed instructions for deploying the models for inference on new data.
+## Detailed Documentation
 
+For more in-depth documentation of the modules and code, see the following links:
+- [BranchCNN Model Documentation](docs/branch_cnn.md)
+- [BranchCNN Model Documentation](docs/hierarcical_cnn.md)
