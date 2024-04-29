@@ -1,5 +1,9 @@
 # FjordVision Hierarchical Classification Models
 
+![Species GIF](demo/output-species.gif)
+![Species GIF](demo/output-class.gif)
+![Species GIF](demo/output-binary.gif)
+
 ## Description
 The FjordVision project explores the impact of various alpha regularization parameters on the performance of hierarchical classification models using a self developed marine dataset and the COCO dataset. This project aims to determine how model configurations affect the recognition capabilities for categories such as marine species and vehicles in the COCO dataset.
 

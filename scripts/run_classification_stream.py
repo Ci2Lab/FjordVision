@@ -8,6 +8,8 @@ from collections import defaultdict
 import random
 import sys
 import os
+import argparse
+import hashlib
 
 sys.path.append('.')
 from preprocessing.preprocessing import find_best_ground_truth_match
@@ -48,12 +50,17 @@ def calculate_num_classes(ontology_path):
         rank_counts[node.rank] += 1
     return rank_counts  # Return a dictionary directly
 
-# Assign Colors
-def assign_colors(labels):
-    unique_labels = set(labels)
+def assign_colors(labels_hierarchy):
     colors = {}
-    for label in unique_labels:
-        colors[label] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    for rank, labels in labels_hierarchy.items():
+        unique_labels = set(labels)
+        colors[rank] = {}
+        for label in unique_labels:
+            # Create a stable hash of the label to seed the random number generator
+            hash_object = hashlib.sha256(label.encode())
+            hex_dig = hash_object.hexdigest()
+            random.seed(int(hex_dig, 16))
+            colors[rank][label] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
     return colors
 
 # Load Models
@@ -78,15 +85,22 @@ def preprocess_image(image):
     resized_image = F.to_tensor(resized_image).unsqueeze_(0).to('cuda')
     return resized_image.float()
 
-def main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, classes_file, display_level='species'):
+def main(args):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    labels_hierarchy = load_taxonomy(ontology_path, classes_file)
-    label_colors = assign_colors([label for sublist in labels_hierarchy.values() for label in sublist])
 
-    cap = cv2.VideoCapture(video_path)
+    # Hardcoded paths for ontology and classes
+    ontology_path = 'datasets/ontology.json'
+    classes_path = 'datasets/The Fjord Dataset/fjord/classes.txt'
+    yolo_model_path = 'datasets/pre-trained-models/fjord/Yolov8n-seg.pt'
+    hierarchical_model_path = 'datasets/hierarchical-model-weights/weights/best_model_alpha_0.80.pth'
+
+    labels_hierarchy = load_taxonomy(ontology_path, classes_path)
+    label_colors = assign_colors(labels_hierarchy)
+
+    cap = cv2.VideoCapture(args.video_path)
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    out = cv2.VideoWriter('demo/output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (frame_width, frame_height))
+    out = cv2.VideoWriter(args.output_path, cv2.VideoWriter_fourcc(*'mp4v'), 30, (frame_width, frame_height))
 
     rank_counts = calculate_num_classes(ontology_path)
     num_classes_hierarchy = [rank_counts.get('binary', 0), rank_counts.get('class', 0), rank_counts.get('genus', 0), rank_counts.get('species', 0)]
@@ -94,6 +108,8 @@ def main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, cl
     yolo_model = load_model(yolo_model_path, 'yolo', device)
     hierarchical_model = load_model(hierarchical_model_path, 'hierarchical', device, num_classes_hierarchy)
     hierarchical_model.eval()
+    
+    display_level = args.display_level  # Use display level passed as argument
     
     while True:
         ret, frame = cap.read()
@@ -113,15 +129,6 @@ def main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, cl
                     # Draw each contour with a transparent color
                     overlay = frame.copy()
                     alpha = 0.5  # Transparency factor
-
-                    # Fill the contour with color based on class
-                    for contour in contours:
-                        cls_label = labels_hierarchy[display_level][idx]
-                        color = label_colors[cls_label]
-                        cv2.fillPoly(overlay, [contour], color)
-
-                    # Blend the overlay with the original frame
-                    cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
                     mask_img = frame * (mask_resized[:, :, None].astype(frame.dtype) / 255)
                     mask_tensor = preprocess_image(mask_img)
@@ -143,6 +150,14 @@ def main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, cl
                     # Convert ontology label to YOLO label
                     label_name = labels_hierarchy[display_level][label]
 
+                    # Fill the contour with color based on class
+                    for contour in contours:
+                        color = label_colors[display_level][label_name]
+                        cv2.fillPoly(overlay, [contour], color)
+
+                    # Blend the overlay with the original frame
+                    cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+
                     # Find centroid of the mask
                     M = cv2.moments(mask_resized)
                     if M["m00"] != 0:
@@ -156,9 +171,10 @@ def main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, cl
     out.release()
 
 if __name__ == "__main__":
-    video_path = "demo/demo.mp4"
-    yolo_model_path = "datasets/pre-trained-models/fjord/Yolov8n-seg.pt"
-    hierarchical_model_path = "datasets/hierarchical-model-weights/weights/best_model_alpha_0.80.pth"
-    ontology_path = "datasets/ontology.json"
-    classes_file = "datasets/The Fjord Dataset/fjord/classes.txt"
-    main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, classes_file)
+    parser = argparse.ArgumentParser(description="Run YOLO and hierarchical CNN model on a video.")
+    parser.add_argument("--video_path", type=str, default="demo/demo.mp4", help="Path to the input video file.")
+    parser.add_argument("--display_level", type=str, default='species', help="The level of the taxonomy to display.")   
+    parser.add_argument("--output_path", type=str, default='demo/output.mp4', help="The ouput file")
+    
+    args = parser.parse_args()
+    main(args)
