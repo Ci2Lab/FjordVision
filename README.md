@@ -41,9 +41,9 @@ source fjordvision/bin/activate
 pip install -r requirements.txt
 ```
 
-## Usage with pretrained models and our experimental data
+## Usage
 
-This section outlines the necessary steps to utilize the project for replicating our methods as well as running our code with pre-trained models and experimental data.
+This section outlines the necessary steps to utilize the project for running our code with pre-trained models and experimental data.
 
 ### Download datasets and experimental data
 
