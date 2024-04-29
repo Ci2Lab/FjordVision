@@ -14,24 +14,31 @@ from preprocessing.preprocessing import find_best_ground_truth_match
 from models.hierarchical_cnn import HierarchicalCNN
 
 # Load Taxonomy
-def load_taxonomy(ontology_path):
+def load_taxonomy(ontology_path, classes_path):
     importer = JsonImporter()
     with open(ontology_path, 'r') as f:
         root = importer.read(f)
-    labels = {node.rank: [] for node in root.descendants if node.rank}
-    for node in root.descendants:
-        labels[node.rank].append(node.name)
-    return labels
+    
+    # Load the ordering of species from classes.txt
+    with open(classes_path, 'r') as file:
+        ordered_species = [line.strip() for line in file]
 
-# Function to create a mapping between ontology labels and YOLO labels based on common names
-def create_ontology_to_yolo_mapping(ontology_labels, yolo_labels):
-    ontology_to_yolo_mapping = {}
-    for ontology_label in ontology_labels:
-        for yolo_label in yolo_labels:
-            if yolo_label in ontology_label:
-                ontology_to_yolo_mapping[ontology_label] = yolo_label
-                break
-    return ontology_to_yolo_mapping
+    labels = {node.rank: [] for node in root.descendants if node.rank}
+    
+    # Update species to follow the order defined in classes.txt
+    species_set = set(ordered_species)  # Convert list to set for fast lookup
+    labels['species'] = [species for species in ordered_species if species in species_set]
+
+    # Append remaining species that might not be in classes.txt
+    additional_species = [node.name for node in root.descendants if node.rank == 'species' and node.name not in species_set]
+    labels['species'].extend(additional_species)
+    
+    # Load other ranks
+    for node in root.descendants:
+        if node.rank != 'species':
+            labels[node.rank].append(node.name)
+
+    return labels
 
 def calculate_num_classes(ontology_path):
     with open(ontology_path, 'r') as f:
@@ -71,9 +78,9 @@ def preprocess_image(image):
     resized_image = F.to_tensor(resized_image).unsqueeze_(0).to('cuda')
     return resized_image.float()
 
-def main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, display_level='species'):
+def main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, classes_file, display_level='species'):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    labels_hierarchy = load_taxonomy(ontology_path)
+    labels_hierarchy = load_taxonomy(ontology_path, classes_file)
     label_colors = assign_colors([label for sublist in labels_hierarchy.values() for label in sublist])
 
     cap = cv2.VideoCapture(video_path)
@@ -87,11 +94,6 @@ def main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, di
     yolo_model = load_model(yolo_model_path, 'yolo', device)
     hierarchical_model = load_model(hierarchical_model_path, 'hierarchical', device, num_classes_hierarchy)
     hierarchical_model.eval()
-
-    # Create mapping between ontology labels and YOLO labels
-    ontology_labels = labels_hierarchy['species']
-    yolo_labels = ['asterias rubens', 'asteroidea', 'fucus vesiculosus', 'henrica', 'mytilus edulis', 'myxine glurinosa', 'pipe', 'rock', 'saccharina latissima', 'tree', 'ulva intestinalis', 'urospora', 'zostera marina']
-    ontology_to_yolo_mapping = create_ontology_to_yolo_mapping(ontology_labels, yolo_labels)
     
     while True:
         ret, frame = cap.read()
@@ -139,7 +141,7 @@ def main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, di
                         label = label[0] if label else -1  # Use -1 if list is empty
 
                     # Convert ontology label to YOLO label
-                    label_name = ontology_to_yolo_mapping.get(label, 'Unknown')
+                    label_name = labels_hierarchy[display_level][label]
 
                     # Find centroid of the mask
                     M = cv2.moments(mask_resized)
@@ -158,4 +160,5 @@ if __name__ == "__main__":
     yolo_model_path = "datasets/pre-trained-models/fjord/Yolov8n-seg.pt"
     hierarchical_model_path = "datasets/hierarchical-model-weights/weights/best_model_alpha_0.80.pth"
     ontology_path = "datasets/ontology.json"
-    main(video_path, yolo_model_path, hierarchical_model_path, ontology_path)
+    classes_file = "datasets/The Fjord Dataset/fjord/classes.txt"
+    main(video_path, yolo_model_path, hierarchical_model_path, ontology_path, classes_file)
