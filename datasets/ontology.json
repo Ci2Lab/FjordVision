@@ -139,7 +139,7 @@
           "rank": "class"
         }
       ],
-      "name": "marine life",
+      "name": "biotic",
       "rank": "binary"
     },
     {
@@ -187,7 +187,7 @@
           "rank": "class"
         }
       ],
-      "name": "inanimate",
+      "name": "abiotic",
       "rank": "binary"
     }
   ],
