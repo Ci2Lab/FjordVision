@@ -17,10 +17,7 @@ class-activations/*
 *.pyc
 
 # Ignore data that must be downloaded
-datasets/coco
 datasets/segmented-objects
 datasets/hierarcical-models-weights
-datasets/The Fjord Dataset/
-datasets/coco-segmented-objects
-datasets/hierarchical-model-weights
+datasets/EMVSD/
 datasets/pre-trained-models
