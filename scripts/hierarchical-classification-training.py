@@ -26,7 +26,7 @@ importer = JsonImporter()
 with open('datasets/ontology.json', 'r') as f:
     root = importer.read(f)
 
-classes_file = 'datasets/The Fjord Dataset/fjord/classes.txt'
+classes_file = 'datasets/EMVSD/EMVSD/classes.txt'
 
 object_names = []
 with open(classes_file, 'r') as file:
