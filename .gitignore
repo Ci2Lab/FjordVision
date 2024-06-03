@@ -21,6 +21,6 @@ datasets/segmented-objects
 datasets/hierarcical-models-weights
 datasets/EMVSD/
 datasets/pre-trained-models
-dataset/rtdetr-segmented-objects
-dataset/yolov9-segmented-objects
-dataset/yolov8-segmented-objects
+datasets/rtdetr-segmented-objects
+datasets/yolov9-segmented-objects
+datasets/yolov8-segmented-objects
