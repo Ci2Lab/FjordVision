@@ -1,12 +1,15 @@
 import os
 import random
 import pandas as pd
-from ultralytics import YOLO
+from ultralytics import YOLO, RTDETR
 from anytree import Node
 import torch
 import gc  # Garbage collector interface
 from anytree.importer import JsonImporter
 import sys
+from pathlib import Path
+import cv2
+
 sys.path.append('.')
 
 from preprocessing.preprocessing import process_result, append_to_parquet_file
@@ -14,22 +17,28 @@ from preprocessing.preprocessing import process_result, append_to_parquet_file
 importer = JsonImporter()
 root = importer.read(open('datasets/ontology.json', 'r'))
 
-classes_file = 'datasets/The Fjord Dataset/fjord/classes.txt'
+classes_file = 'datasets/EMVSD/EMVSD/classes.txt'
 
 species_names = []
 with open(classes_file, 'r') as file:
     species_names = [line.strip() for line in file]
+
+# Debug: Print the species names
+print("Species names:", species_names)
 
 genus_names = [node.name for node in root.descendants if node.rank == 'genus']
 class_names = [node.name for node in root.descendants if node.rank == 'class']
 binary_names = [node.name for node in root.descendants if node.rank == 'binary']
 
 # Path to the image directory and model weights
-IMGDIR_PATH = "datasets/The Fjord Dataset/fjord/images/train"
-MODEL_PATH = "datasets/pre-trained-models/fjord/Yolov8n-seg.pt"
-classes_file = 'datasets/The Fjord Dataset/fjord/classes.txt'
-OBJDIR = 'datasets/segmented-objects/'
+IMGDIR_PATH = "datasets/EMVSD/EMVSD/images/train"
+MODEL_PATH = "datasets/pre-trained-models/EMVSD/yolov9c-seg.pt"
+OBJDIR = 'datasets/yolov9-segmented-objects/'
 CHECKPOINT_FILE = os.path.join(OBJDIR, 'checkpoint.txt')
+
+# Determine the type of model based on the model path
+USE_MASKS = 'seg' in MODEL_PATH  # Assume models with 'seg' in the name use masks
+MODEL_TYPE = 'RTDETR' if 'rtdetr' in MODEL_PATH.lower() else 'YOLO'
 
 # Ensure the directory exists
 os.makedirs(OBJDIR, exist_ok=True)
@@ -57,7 +66,11 @@ image_paths = [os.path.join(IMGDIR_PATH, img) for img in image_files if img.lowe
 random.shuffle(image_paths)
 
 def process_and_store_batches(image_paths, batch_size, parquet_file_name):
-    model = YOLO(MODEL_PATH)
+    if MODEL_TYPE == 'RTDETR':
+        model = RTDETR(MODEL_PATH)
+    else:
+        model = YOLO(MODEL_PATH)
+        
     checkpoint_index = manage_checkpoint(read=True)
     total_batches = len(image_paths) // batch_size + (1 if len(image_paths) % batch_size else 0)
 
@@ -69,7 +82,7 @@ def process_and_store_batches(image_paths, batch_size, parquet_file_name):
         
         batch_data = []
         for result in batch_results:
-            entries = process_result(result, OBJDIR, species_names)
+            entries = process_result(result, OBJDIR, species_names, USE_MASKS)
             batch_data.extend(entries)
         
         if batch_data:
@@ -83,4 +96,4 @@ def process_and_store_batches(image_paths, batch_size, parquet_file_name):
         torch.cuda.empty_cache()
         gc.collect()  # Force garbage collection
 
-process_and_store_batches(image_paths, 200, 'segmented-objects-dataset.parquet')
+process_and_store_batches(image_paths, 100, 'yolov9-segmented-objects-dataset.parquet')

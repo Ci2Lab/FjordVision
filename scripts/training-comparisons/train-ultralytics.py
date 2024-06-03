@@ -32,8 +32,7 @@ with open(updated_dataset_yaml_path, 'w') as file:
 
 # Model configurations with corresponding YAML files
 models = [
-    ("rtdetr-l", "rtdetr-l.yaml"),
-    ("yolov10n", "yolov10n.yaml")
+    ("yolov9c-seg", "yolov9c-seg.yaml")
 ]
 
 # Function to determine if a model needs training
@@ -47,7 +46,7 @@ for model_name, yaml_file in models:
     # Check if this experiment already exists
     if needs_training(experiment_name):
         # Select appropriate model class
-        if model_name.startswith("yolov8") or model_name.startswith("yolov10"):
+        if model_name.startswith("yolov8") or model_name.startswith("yolov9"):
             model = YOLO(yaml_file)
         elif model_name.startswith("rtdetr"):
             model = RTDETR(yaml_file)

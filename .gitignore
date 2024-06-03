@@ -23,3 +23,4 @@ datasets/EMVSD/
 datasets/pre-trained-models
 dataset/rtdetr-segmented-objects
 dataset/yolov9-segmented-objects
+dataset/yolov8-segmented-objects
