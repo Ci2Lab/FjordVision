@@ -8,38 +8,47 @@ import os
 from anytree import find_by_attr
 from anytree import RenderTree
 
-def apply_mask_to_detected_object(orig_img, box, mask):
+def apply_mask_to_detected_object(orig_img, box, mask, use_masks):
     """
-    Apply a mask to a detected object in an image specified by the bounding box.
+    Apply a mask to a detected object in an image specified by the bounding box
+    and draw the bounding box on the image.
 
     :param orig_img: The original image as a NumPy array.
     :param box: The bounding box object with 'xyxy' attribute.
     :param mask: The mask object with 'xy' attribute for segments.
-    :return: Masked image as a NumPy array.
+    :param use_masks: Boolean indicating whether to use masks or not.
+    :return: Masked image as a NumPy array with bounding box drawn.
     """
     # Get bounding box (bbox) coordinates
     bbox = box.xyxy[0].cpu().numpy()
     x1, y1, x2, y2 = map(int, bbox)
 
-    # Crop the image using bbox
-    cropped_img_np = orig_img[y1:y2, x1:x2]
+    if use_masks and mask is not None:
+        # Crop the image using bbox
+        cropped_img_np = orig_img[y1:y2, x1:x2]
 
-    # Initialize an empty binary mask with the same dimensions as the original image
-    npmask = np.zeros(orig_img.shape[:2], dtype=np.uint8)
+        # Initialize an empty binary mask with the same dimensions as the original image
+        npmask = np.zeros(orig_img.shape[:2], dtype=np.uint8)
 
-    # Fill the mask using the segments in 'xy'
-    for segment in mask.xy:
-        np_segment = np.array(segment, np.int32).reshape((-1, 1, 2))
-        cv2.fillPoly(npmask, [np_segment], 255)
+        # Fill the mask using the segments in 'xy'
+        for segment in mask.xy:
+            np_segment = np.array(segment, np.int32).reshape((-1, 1, 2))
+            cv2.fillPoly(npmask, [np_segment], 255)
 
-    # Crop and resize the mask to match the cropped image size
-    cropped_mask = npmask[y1:y2, x1:x2]
-    mask_resized = cv2.resize(cropped_mask, (x2 - x1, y2 - y1))
+        # Crop and resize the mask to match the cropped image size
+        cropped_mask = npmask[y1:y2, x1:x2]
+        mask_resized = cv2.resize(cropped_mask, (x2 - x1, y2 - y1))
 
-    # Apply the mask to the cropped image
-    masked_image = cv2.bitwise_and(cropped_img_np, cropped_img_np, mask=mask_resized)
+        # Apply the mask to the cropped image
+        masked_image = cv2.bitwise_and(cropped_img_np, cropped_img_np, mask=mask_resized)
 
-    return masked_image
+        # Draw the bounding box on the original image
+        cv2.rectangle(orig_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        return masked_image
+    else:
+        # Draw the bounding box on the original image
+        cv2.rectangle(orig_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        return orig_img
 
 
 def calculate_binary_mask_iou(mask1, mask2):
@@ -152,17 +161,17 @@ def append_to_parquet_file(df, parquet_file_path):
 
 
 # Function to process a single result from YOLO
-def process_result(result, basedir, class_index_to_name):
+def process_result(result, basedir, class_index_to_name, use_masks):
     data = []
     orig_img = result.orig_img
-    if result.boxes is not None and result.masks is not None:
-        for mask_idx, (box, mask) in enumerate(zip(result.boxes, result.masks)):
-            masked_img = apply_mask_to_detected_object(orig_img, box, mask)
+    if result.boxes is not None:
+        for idx, box in enumerate(result.boxes):
+            masked_img = apply_mask_to_detected_object(orig_img, box, result.masks[idx] if use_masks and result.masks is not None else None, use_masks)
             # Extract the original file name without extension and directory
             original_filename_stem = Path(result.path).stem
             
             # Construct new filename with index
-            new_filename = f"{original_filename_stem}_{mask_idx}.jpg"
+            new_filename = f"{original_filename_stem}_{idx}.jpg"
             path = os.path.join(basedir, new_filename)
             
             # Save the segmented image
@@ -171,8 +180,8 @@ def process_result(result, basedir, class_index_to_name):
             conf = box.conf.item()
             pred = box.cls.item()
 
-            predicted_mask_xyn = mask.xyn[0]
-            best_class, best_iou = find_best_ground_truth_match(result, predicted_mask_xyn, orig_img.shape)
+            predicted_mask_xyn = result.masks[idx].xyn[0] if use_masks and result.masks is not None else None
+            best_class, best_iou = find_best_ground_truth_match(result, predicted_mask_xyn, orig_img.shape) if predicted_mask_xyn is not None else (None, None)
 
             species_name = class_index_to_name[best_class] if best_class is not None else "Unknown"
 
