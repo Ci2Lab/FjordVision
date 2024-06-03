@@ -52,7 +52,7 @@ class HierarchicalCNN(nn.Module):
             ChannelAttention(64),
             SpatialAttention(kernel_size=5),
         )
-        
+
         self.conv2 = nn.Sequential(
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
@@ -97,9 +97,9 @@ class HierarchicalCNN(nn.Module):
             for num_classes in num_classes_hierarchy
         ])
 
-    def forward(self, x, conf, iou, pred_species):
+    def forward(self, x, conf, pred_species):
         outputs = []
-        additional_features = torch.cat((conf.view(-1, 1), iou.view(-1, 1), pred_species.view(-1, 1)), dim=1)
+        additional_features = torch.cat((conf.view(-1, 1), pred_species.view(-1, 1)), dim=1)
 
         x = self.conv1(x)
         x = self.conv2(x)

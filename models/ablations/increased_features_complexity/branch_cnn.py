@@ -34,9 +34,9 @@ class BranchCNN(nn.Module):
         self.additional_feature_layers = nn.Sequential(
             nn.Linear(num_additional_features, num_additional_features * 2),
             Mish(),
-            nn.Linear(num_additional_features * 2, num_additional_features * 3),  # Increased complexity by adjusting the factor
+            nn.Linear(num_additional_features * 2, num_additional_features * 3),
             Mish(),
-            nn.Linear(num_additional_features * 3, num_additional_features * 4),  # Add more layers with increased complexity
+            nn.Linear(num_additional_features * 3, num_additional_features * 4),
             Mish(),
         )
 

@@ -47,8 +47,8 @@ class HierarchicalCNN(nn.Module):
             for num_classes in num_classes_hierarchy
         ])
 
-    def forward(self, x, conf, iou, pred_species):
-        additional_features = torch.cat((conf.view(-1, 1), iou.view(-1, 1), pred_species.view(-1, 1)), dim=1)
+    def forward(self, x, conf, pred_species):
+        additional_features = torch.cat((conf.view(-1, 1), pred_species.view(-1, 1)), dim=1)
 
         x = self.conv1(x)
         x = self.conv2(x)

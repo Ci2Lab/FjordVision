@@ -93,7 +93,7 @@ class HierarchicalCNN(nn.Module):
         self.adaptive_pool = nn.AdaptiveAvgPool2d(output_size)
 
         self.branches = nn.ModuleList([
-            BranchCNN(output_size[0] * output_size[1] * 512, num_classes, num_additional_features)
+            BranchCNN(output_size[0] * output_size[1] * 512 + num_additional_features, num_classes)
             for num_classes in num_classes_hierarchy
         ])
 
@@ -103,15 +103,14 @@ class HierarchicalCNN(nn.Module):
             def hook_fn(module, input, output):
                 self.activations.append(output.detach())
 
-            # You might want to register hooks after specific layers:
-            self.conv1[-1].register_forward_hook(hook_fn)  # After SpatialAttention in conv1
-            self.conv2[-1].register_forward_hook(hook_fn)  # After SpatialAttention in conv2
-            self.conv3[-1].register_forward_hook(hook_fn)  # After SpatialAttention in conv3
-            self.conv4[-1].register_forward_hook(hook_fn)  # After SpatialAttention in conv4
+            self.conv1[-1].register_forward_hook(hook_fn)
+            self.conv2[-1].register_forward_hook(hook_fn)
+            self.conv3[-1].register_forward_hook(hook_fn)
+            self.conv4[-1].register_forward_hook(hook_fn)
 
-    def forward(self, x, conf, iou, pred_species):
+    def forward(self, x, conf, pred_species):
         outputs = []
-        additional_features = torch.cat((conf.view(-1, 1), iou.view(-1, 1), pred_species.view(-1, 1)), dim=1)
+        additional_features = torch.cat((conf.view(-1, 1), pred_species.view(-1, 1)), dim=1)
 
         x = self.conv1(x)
         x = self.conv2(x)

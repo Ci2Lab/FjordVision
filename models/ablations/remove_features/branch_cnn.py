@@ -1,32 +1,29 @@
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-class Mish(nn.Module):
-    def forward(self, x):
-        return x * torch.tanh(F.softplus(x))
 
 class BranchCNN(nn.Module):
-    def __init__(self, num_in_features, num_classes):
+    def __init__(self, in_channels, num_classes, output_size):
         super(BranchCNN, self).__init__()
-
-        # Fully connected layers for processing the main features
-        self.fc_layers = nn.Sequential(
-            nn.Linear(num_in_features, 1024),
-            nn.BatchNorm1d(1024),
-            Mish(),
-            nn.Dropout(0.5),
-            nn.Linear(1024, 512),
-            nn.BatchNorm1d(512),
-            Mish(),
-            nn.Dropout(0.5),
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            Mish(),
-            nn.Dropout(0.5),
-            nn.Linear(256, num_classes),
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.Mish()
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(512, 1024, kernel_size=3, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.Mish()
+        )
+        self.global_pool = nn.AdaptiveAvgPool2d(output_size)
+        self.classifier = nn.Sequential(
+            nn.Linear(1024 * output_size[0] * output_size[1], 512),
+            nn.Mish(),
+            nn.Linear(512, num_classes)
         )
 
     def forward(self, x):
-        # x should already be flattened when passed to this module
-        return self.fc_layers(x)
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.global_pool(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
