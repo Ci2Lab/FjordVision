@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Path to your Python script
-PYTHON_SCRIPT="/mnt/RAID/projects/FjordVision/scripts/coco-dataset-creation-postprocess.py"
+PYTHON_SCRIPT="scripts/dataset-creation-postprocess.py"
 
 # Infinite loop to restart the script if it exits for any reason
 while true; do
