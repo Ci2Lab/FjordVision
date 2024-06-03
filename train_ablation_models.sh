@@ -1,18 +1,12 @@
 #!/bin/bash
-cd /mnt/RAID/projects/FjordVision
-
-# Activate virtual environment
-source fjordvision/bin/activate
 
 # Define a list of alpha values
 alpha_values=(0 0.2 0.5 0.8 1)
 
 # List of experiments to run
 declare -A experiments
-experiments["attention-removed"]="scripts/attention_removed/hierarchical-classification-training.py"
-experiments["increased-features-complexity"]="scripts/increased_features_complexity/hierarchical-classification-training.py"
-experiments["decreased-branch-complexity"]="scripts/decreased_branch_complexity/hierarchical-classification-training.py"
-experiments["remove-features"]="scripts/remove_features/hierarchical-classification-training.py"
+experiments["yolov9"]="scripts/yolov9/hierarchical-classification-training.py"
+experiments["rt-detr"]="scripts/rt-detr/hierarchical-classification-training.py"
 
 # Loop through each experiment
 for experiment in "${!experiments[@]}"
