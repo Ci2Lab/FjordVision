@@ -8,25 +8,34 @@ import os
 from anytree import find_by_attr
 from anytree import RenderTree
 
+
 def apply_mask_to_detected_object(orig_img, box, mask, use_masks):
     """
-    Apply a mask to a detected object in an image specified by the bounding box
-    and draw the bounding box on the image.
+    Crop the detected object in an image specified by the bounding box
+    and optionally apply the mask to the detected object.
 
     :param orig_img: The original image as a NumPy array.
     :param box: The bounding box object with 'xyxy' attribute.
     :param mask: The mask object with 'xy' attribute for segments.
     :param use_masks: Boolean indicating whether to use masks or not.
-    :return: Masked image as a NumPy array with bounding box drawn.
+    :return: Cropped image of the detected object.
     """
     # Get bounding box (bbox) coordinates
     bbox = box.xyxy[0].cpu().numpy()
     x1, y1, x2, y2 = map(int, bbox)
 
-    if use_masks and mask is not None:
-        # Crop the image using bbox
-        cropped_img_np = orig_img[y1:y2, x1:x2]
+    if x1 < 0 or y1 < 0 or x2 > orig_img.shape[1] or y2 > orig_img.shape[0]:
+        print(f"Skipping invalid bbox: {bbox}")
+        return None
 
+    # Crop the image using bbox
+    cropped_img_np = orig_img[y1:y2, x1:x2]
+
+    if cropped_img_np.size == 0:
+        print(f"Skipping empty crop for bbox: {bbox}")
+        return None
+
+    if use_masks and mask is not None:
         # Initialize an empty binary mask with the same dimensions as the original image
         npmask = np.zeros(orig_img.shape[:2], dtype=np.uint8)
 
@@ -41,15 +50,9 @@ def apply_mask_to_detected_object(orig_img, box, mask, use_masks):
 
         # Apply the mask to the cropped image
         masked_image = cv2.bitwise_and(cropped_img_np, cropped_img_np, mask=mask_resized)
-
-        # Draw the bounding box on the original image
-        cv2.rectangle(orig_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
         return masked_image
     else:
-        # Draw the bounding box on the original image
-        cv2.rectangle(orig_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        return orig_img
-
+        return cropped_img_np
 
 def calculate_binary_mask_iou(mask1, mask2):
     """
@@ -98,40 +101,65 @@ def load_ground_truth_mask_xyn(label_file):
         for line in file:
             elements = line.strip().split()
             class_index = int(elements[0])
-            # Normalized coordinates as in mask.xyn
             mask_xyn = np.array([float(x) for x in elements[1:]]).reshape((-1, 2))
             gt_masks_xyn.append((class_index, mask_xyn))
 
     return gt_masks_xyn
 
 
-def find_best_ground_truth_match(result, predicted_mask_xyn, img_shape):
+def find_best_ground_truth_match(result, predicted_mask_xyn=None, img_shape=None, bbox=None):
     """
-    Find the ground truth annotation that best matches the predicted mask.
+    Find the ground truth annotation that best matches the predicted mask or bounding box.
 
-    :param result: The result object containing the image path and masks.
-    :param predicted_mask_xyn: The predicted mask in xyn format.
-    :param img_shape: Shape of the corresponding image.
-    :return: Tuple of the best matching ground truth class and IoU score.
+    :param result: The result object containing the image path and masks or bounding boxes.
+    :param predicted_mask_xyn: The predicted mask in xyn format (optional).
+    :param img_shape: Shape of the corresponding image (optional).
+    :param bbox: The predicted bounding box (optional).
+    :return: The best matching ground truth class.
     """
     label_file = result.path.replace('/images/', '/labels/').replace('.jpg', '.txt')
     gt_annotations = load_ground_truth_mask_xyn(label_file)
 
     best_iou = 0
     best_class = None
-    predicted_mask = convert_polygon_to_mask(predicted_mask_xyn, img_shape)
 
-    for gt_annotation in gt_annotations:
-        cls, gt_polygon_points = gt_annotation
-        gt_mask = convert_polygon_to_mask(gt_polygon_points, img_shape)
-        iou = calculate_binary_mask_iou(gt_mask, predicted_mask)
-        
-        if iou > best_iou:
-            best_iou = iou
-            best_class = cls
+    if predicted_mask_xyn is not None and img_shape is not None:
+        predicted_mask = convert_polygon_to_mask(predicted_mask_xyn, img_shape)
 
-    return best_class, best_iou
+        for gt_annotation in gt_annotations:
+            cls, gt_polygon_points = gt_annotation
+            gt_mask = convert_polygon_to_mask(gt_polygon_points, img_shape)
+            iou = calculate_binary_mask_iou(gt_mask, predicted_mask)
 
+            if iou > best_iou:
+                best_iou = iou
+                best_class = cls
+    elif bbox is not None:
+        x1, y1, x2, y2 = map(int, bbox)
+        pred_box_area = (x2 - x1) * (y2 - y1)
+
+        for gt_annotation in gt_annotations:
+            cls, gt_polygon_points = gt_annotation
+            gt_mask = convert_polygon_to_mask(gt_polygon_points, img_shape)
+            gt_box = cv2.boundingRect(gt_mask)
+            gx1, gy1, gx2, gy2 = gt_box
+            gt_box_area = (gx2 - gx1) * (gy2 - gy1)
+
+            inter_x1 = max(x1, gx1)
+            inter_y1 = max(y1, gy1)
+            inter_x2 = min(x2, gx2)
+            inter_y2 = min(y2, gy2)
+
+            inter_area = max(0, inter_x2 - inter_x1) * max(0, inter_y2 - inter_y1)
+            union_area = pred_box_area + gt_box_area - inter_area
+
+            iou = inter_area / union_area
+
+            if iou > best_iou:
+                best_iou = iou
+                best_class = cls
+
+    return best_class
 
 def get_taxonomy_hierarchy(taxonomy, class_name):
     """
@@ -164,33 +192,37 @@ def append_to_parquet_file(df, parquet_file_path):
 def process_result(result, basedir, class_index_to_name, use_masks):
     data = []
     orig_img = result.orig_img
+    img_shape = orig_img.shape
+
     if result.boxes is not None:
         for idx, box in enumerate(result.boxes):
-            masked_img = apply_mask_to_detected_object(orig_img, box, result.masks[idx] if use_masks and result.masks is not None else None, use_masks)
-            # Extract the original file name without extension and directory
+            cropped_img = apply_mask_to_detected_object(orig_img, box, result.masks[idx] if use_masks and result.masks is not None else None, use_masks)
+            if cropped_img is None:
+                continue
+
             original_filename_stem = Path(result.path).stem
-            
-            # Construct new filename with index
             new_filename = f"{original_filename_stem}_{idx}.jpg"
             path = os.path.join(basedir, new_filename)
-            
-            # Save the segmented image
-            cv2.imwrite(path, masked_img)
+            cv2.imwrite(path, cropped_img)
 
             conf = box.conf.item()
             pred = box.cls.item()
+            species_name = class_index_to_name[int(pred)]
 
-            predicted_mask_xyn = result.masks[idx].xyn[0] if use_masks and result.masks is not None else None
-            best_class, best_iou = find_best_ground_truth_match(result, predicted_mask_xyn, orig_img.shape) if predicted_mask_xyn is not None else (None, None)
+            if use_masks and result.masks is not None:
+                predicted_mask_xyn = result.masks[idx].xyn[0]
+                best_class = find_best_ground_truth_match(result, predicted_mask_xyn=predicted_mask_xyn, img_shape=img_shape)
+            else:
+                bbox = box.xyxy[0].cpu().numpy()
+                best_class = find_best_ground_truth_match(result, bbox=bbox, img_shape=img_shape)
 
-            species_name = class_index_to_name[best_class] if best_class is not None else "Unknown"
+            true_species_name = class_index_to_name[best_class] if best_class is not None else "Unknown"
 
             entry = {
                 'masked_image': path,
                 'confidence': conf,
-                'iou_with_best_gt': best_iou,
-                'predicted_species': class_index_to_name[int(pred)],
-                'species': species_name
+                'predicted_species': species_name,
+                'species': true_species_name
             }
 
             data.append(entry)

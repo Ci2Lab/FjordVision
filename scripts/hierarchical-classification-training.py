@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 import csv
 from collections import defaultdict
 import sys
+import os
 
 # Adding the project directory to the system path
 sys.path.append('.')
@@ -42,7 +43,7 @@ for node in root.descendants:
         binary_names.append(node.name)
 
 # Read Dataset
-df = pd.read_parquet('datasets/segmented-objects-dataset.parquet')
+df = pd.read_parquet('datasets/yolov8-segmented-objects-dataset.parquet')
 
 train_val_df, test_df = train_test_split(df, test_size=0.3, random_state=42)
 train_df, val_df = train_test_split(train_val_df, test_size=0.5, random_state=42)
@@ -53,7 +54,7 @@ for node in root.descendants:
     rank_counts[node.rank] += 1
 
 num_classes_hierarchy = [rank_counts['binary'], rank_counts['class'], rank_counts['genus'], rank_counts['species']]
-num_additional_features = 3
+num_additional_features = 2
 num_levels = len(num_classes_hierarchy)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -67,7 +68,6 @@ test_dataset = CustomDataset(test_df, object_names, subcategory_names, category_
 train_loader = DataLoader(train_dataset, batch_size=50, shuffle=True, num_workers=8)
 val_loader = DataLoader(val_dataset, batch_size=50, shuffle=False, num_workers=8)
 test_loader = DataLoader(test_dataset, batch_size=50, shuffle=False, num_workers=8)
-
 
 # Alpha value from argument
 initial_alpha = args.alpha
@@ -89,13 +89,15 @@ all_parameters = list(model.parameters()) + list(criterion.parameters()) if alph
 optimizer = torch.optim.AdamW(all_parameters, lr=0.001, weight_decay=0.01)
 
 # Adjust the scheduler's milestones considering the usual early stopping point
-# Inside your training script, after initializing the optimizer
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
 
 # Dynamic file names based on alpha value
 log_filename = f'logs/model_alpha_{args.alpha:.2f}.csv'
 best_model_filename = f'datasets/hierarchical-model-weights/weights/best_model_alpha_{args.alpha:.2f}.pth'
 last_model_filename = f'datasets/hierarchical-model-weights/weights/last_model_alpha_{args.alpha:.2f}.pth'
+
+# Ensure the directories for saving the model exist
+os.makedirs(os.path.dirname(best_model_filename), exist_ok=True)
 
 # Training and Validation Loop with Logging
 with open(log_filename, mode='w', newline='') as file:
@@ -107,12 +109,12 @@ with open(log_filename, mode='w', newline='') as file:
         model.train()
         train_loss = 0.0
 
-        for images, conf, iou, pred_species, species_index, genus_index, class_index, binary_index in train_loader:
-            images, conf, iou, pred_species = images.to(device), conf.to(device), iou.to(device), pred_species.to(device)
+        for images, conf, pred_species, species_index, genus_index, class_index, binary_index in train_loader:
+            images, conf, pred_species = images.to(device), conf.to(device), pred_species.to(device)
             species_index, genus_index, class_index, binary_index = species_index.to(device), genus_index.to(device), class_index.to(device), binary_index.to(device)
 
             optimizer.zero_grad()
-            outputs = model(images, conf, iou, pred_species)
+            outputs = model(images, conf, pred_species)
             targets = [binary_index, class_index, genus_index, species_index]
             loss = criterion(outputs, targets)
             loss.backward()
@@ -123,11 +125,11 @@ with open(log_filename, mode='w', newline='') as file:
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
-            for images, conf, iou, pred_species, species_index, genus_index, class_index, binary_index in val_loader:
-                images, conf, iou, pred_species = images.to(device), conf.to(device), iou.to(device), pred_species.to(device)
+            for images, conf, pred_species, species_index, genus_index, class_index, binary_index in val_loader:
+                images, conf, pred_species = images.to(device), conf.to(device), pred_species.to(device)
                 species_index, genus_index, class_index, binary_index = species_index.to(device), genus_index.to(device), class_index.to(device), binary_index.to(device)
 
-                outputs = model(images, conf, iou, pred_species)
+                outputs = model(images, conf, pred_species)
                 targets = [binary_index, class_index, genus_index, species_index]
                 loss = criterion(outputs, targets)
                 val_loss += loss.item()

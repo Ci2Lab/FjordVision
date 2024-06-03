@@ -7,10 +7,10 @@ from sklearn.model_selection import train_test_split
 import csv
 from collections import defaultdict
 import sys
-import os  # Import os to manage file paths
+import os
 
 # Adding the project directory to the system path
-sys.path.append('/mnt/RAID/projects/FjordVision/')
+sys.path.append('.')
 
 # Update the import statement to the correct path
 from models.ablations.attention_removed.hierarchical_cnn import HierarchicalCNN
@@ -23,11 +23,11 @@ args = parser.parse_args()
 
 # Load taxonomy and class information
 importer = JsonImporter()
-with open('/mnt/RAID/projects/FjordVision/data/ontology.json', 'r') as f:
+with open('datasets/ontology.json', 'r') as f:
     root = importer.read(f)
 
 # Paths for class files
-classes_file = '/mnt/RAID/datasets/The Fjord Dataset/fjord/classes.txt'
+classes_file = 'datasets/EMVSD/EMVSD/classes.txt'
 object_names = [line.strip() for line in open(classes_file, 'r')]
 
 # Classify nodes by rank
@@ -41,7 +41,7 @@ for node in root.descendants:
         binary_names.append(node.name)
 
 # Load dataset
-df = pd.read_parquet('/mnt/RAID/projects/FjordVision/data/segmented-objects-dataset.parquet')
+df = pd.read_parquet('datasets/yolov8-segmented-objects-dataset.parquet')
 train_val_df, test_df = train_test_split(df, test_size=0.3, random_state=42)
 train_df, val_df = train_test_split(train_val_df, test_size=0.5, random_state=42)
 
@@ -51,7 +51,7 @@ for node in root.descendants:
     rank_counts[node.rank] += 1
 
 num_classes_hierarchy = [rank_counts['binary'], rank_counts['class'], rank_counts['genus'], rank_counts['species']]
-num_additional_features = 3  # Ensure this is defined as required
+num_additional_features = 2  # Ensure this is defined as required
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Properly passing both required arguments to the HierarchicalCNN constructor
@@ -75,8 +75,8 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
 
 # Set up directories for logs and weights
-log_directory = '/mnt/RAID/projects/FjordVision/models/ablations/attention_removed/logs/'
-weights_directory = '/mnt/RAID/projects/FjordVision/models/ablations/attention_removed/weights/'
+log_directory = 'models/ablations/attention_removed/logs'
+weights_directory = 'models/ablations/attention_removed/weights/'
 os.makedirs(log_directory, exist_ok=True)
 os.makedirs(weights_directory, exist_ok=True)
 
@@ -94,12 +94,12 @@ with open(log_filename, mode='w', newline='') as file:
         model.train()
         train_loss = 0.0
 
-        for images, conf, iou, pred_species, species_index, genus_index, class_index, binary_index in train_loader:
-            images, conf, iou, pred_species = images.to(device), conf.to(device), iou.to(device), pred_species.to(device)
+        for images, conf, pred_species, species_index, genus_index, class_index, binary_index in train_loader:
+            images, conf, pred_species = images.to(device), conf.to(device), pred_species.to(device)
             species_index, genus_index, class_index, binary_index = species_index.to(device), genus_index.to(device), class_index.to(device), binary_index.to(device)
 
             optimizer.zero_grad()
-            outputs = model(images, conf, iou, pred_species)
+            outputs = model(images, conf, pred_species)
             targets = [binary_index, class_index, genus_index, species_index]
             loss = criterion(outputs, targets)
             loss.backward()
@@ -110,11 +110,11 @@ with open(log_filename, mode='w', newline='') as file:
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
-            for images, conf, iou, pred_species, species_index, genus_index, class_index, binary_index in val_loader:
-                images, conf, iou, pred_species = images.to(device), conf.to(device), iou.to(device), pred_species.to(device)
+            for images, conf, pred_species, species_index, genus_index, class_index, binary_index in val_loader:
+                images, conf, pred_species = images.to(device), conf.to(device), pred_species.to(device)
                 species_index, genus_index, class_index, binary_index = species_index.to(device), genus_index.to(device), class_index.to(device), binary_index.to(device)
 
-                outputs = model(images, conf, iou, pred_species)
+                outputs = model(images, conf, pred_species)
                 targets = [binary_index, class_index, genus_index, species_index]
                 loss = criterion(outputs, targets)
                 val_loss += loss.item()

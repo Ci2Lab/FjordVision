@@ -2,13 +2,10 @@ import os
 import random
 import pandas as pd
 from ultralytics import YOLO, RTDETR
-from anytree import Node
-import torch
-import gc  # Garbage collector interface
 from anytree.importer import JsonImporter
+import torch
+import gc
 import sys
-from pathlib import Path
-import cv2
 
 sys.path.append('.')
 
@@ -32,21 +29,17 @@ binary_names = [node.name for node in root.descendants if node.rank == 'binary']
 
 # Path to the image directory and model weights
 IMGDIR_PATH = "datasets/EMVSD/EMVSD/images/train"
-MODEL_PATH = "datasets/pre-trained-models/EMVSD/yolov9c-seg.pt"
-OBJDIR = 'datasets/yolov9-segmented-objects/'
+MODEL_PATH = "datasets/pre-trained-models/EMVSD/rtdetr-l.pt"
+OBJDIR = 'datasets/rtdetr-segmented-objects/'
 CHECKPOINT_FILE = os.path.join(OBJDIR, 'checkpoint.txt')
+PARQUET_FILE = 'datasets/rtdetr-segmented-objects-dataset.parquet'
 
 # Determine the type of model based on the model path
-USE_MASKS = 'seg' in MODEL_PATH  # Assume models with 'seg' in the name use masks
+USE_MASKS = 'seg' in MODEL_PATH
 MODEL_TYPE = 'RTDETR' if 'rtdetr' in MODEL_PATH.lower() else 'YOLO'
 
 # Ensure the directory exists
 os.makedirs(OBJDIR, exist_ok=True)
-
-# Check if directory is empty (assuming non-empty means process was done or is in progress)
-if os.listdir(OBJDIR):
-    print(f"Directory {OBJDIR} is not empty, assuming process was completed or is in progress.")
-    sys.exit(0)  # Exit if directory is not empty
 
 def manage_checkpoint(read=False, update_index=None):
     if read:
@@ -61,9 +54,31 @@ def manage_checkpoint(read=False, update_index=None):
 
 total_images = 5000
 
-image_files = random.sample(os.listdir(IMGDIR_PATH), total_images)
-image_paths = [os.path.join(IMGDIR_PATH, img) for img in image_files if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
-random.shuffle(image_paths)
+# Load image files
+image_files = [img for img in os.listdir(IMGDIR_PATH) if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
+random.shuffle(image_files)
+
+# Check if the number of images is sufficient
+if len(image_files) < total_images:
+    raise ValueError(f"Not enough images in the directory. Found {len(image_files)}, but need {total_images}.")
+
+# Limit the list to the required total_images
+image_paths = [os.path.join(IMGDIR_PATH, img) for img in image_files[:total_images]]
+
+# Check how many images are already processed and in the parquet file
+processed_images = 0
+if os.path.exists(PARQUET_FILE):
+    df_existing = pd.read_parquet(PARQUET_FILE)
+    processed_images = len(df_existing)
+
+remaining_images = total_images - processed_images
+
+if remaining_images <= 0:
+    print(f"Already processed {processed_images} images. No more images to process.")
+    sys.exit(0)
+
+# Reduce image_paths to the remaining images to process
+image_paths = image_paths[-remaining_images:]
 
 def process_and_store_batches(image_paths, batch_size, parquet_file_name):
     if MODEL_TYPE == 'RTDETR':
@@ -96,4 +111,4 @@ def process_and_store_batches(image_paths, batch_size, parquet_file_name):
         torch.cuda.empty_cache()
         gc.collect()  # Force garbage collection
 
-process_and_store_batches(image_paths, 100, 'yolov9-segmented-objects-dataset.parquet')
+process_and_store_batches(image_paths, 100, PARQUET_FILE)
