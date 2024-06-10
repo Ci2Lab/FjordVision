@@ -20,6 +20,9 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 # Command-line argument parsing
 parser = argparse.ArgumentParser(description='Hierarchical Classification Training')
 parser.add_argument('--alpha', type=float, required=True, help='Alpha value for the model')
+parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate for the optimizer')
+parser.add_argument('--weight_decay', type=float, default=0.01, help='Weight decay for the optimizer')
+parser.add_argument('--dropout_rate', type=float, default=0.5, help='Dropout rate for the model')
 args = parser.parse_args()
 
 # Populate Taxonomy
@@ -58,7 +61,7 @@ num_additional_features = 2
 num_levels = len(num_classes_hierarchy)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = HierarchicalCNN(num_classes_hierarchy, num_additional_features).to(device)
+model = HierarchicalCNN(num_classes_hierarchy, num_additional_features, dropout_rate=args.dropout_rate).to(device)
 
 # DataLoader
 train_dataset = CustomDataset(train_df, object_names, subcategory_names, category_names, binary_names, root)
@@ -86,7 +89,7 @@ criterion = HierarchicalCrossEntropyLoss(num_levels=len(num_classes_hierarchy), 
 all_parameters = list(model.parameters()) + list(criterion.parameters()) if alpha_learnable else model.parameters()
 
 # Initialize the AdamW optimizer with both model and potentially criterion's parameters
-optimizer = torch.optim.AdamW(all_parameters, lr=0.001, weight_decay=0.01)
+optimizer = torch.optim.AdamW(all_parameters, lr=args.learning_rate, weight_decay=args.weight_decay)
 
 # Adjust the scheduler's milestones considering the usual early stopping point
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)

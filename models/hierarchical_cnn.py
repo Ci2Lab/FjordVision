@@ -1,3 +1,5 @@
+# models/hierarchical_cnn.py
+
 import torch
 import torch.nn as nn
 from .branch_cnn import BranchCNN
@@ -38,7 +40,7 @@ class SpatialAttention(nn.Module):
         return x * attention.expand_as(x)
 
 class HierarchicalCNN(nn.Module):
-    def __init__(self, num_classes_hierarchy, num_additional_features, output_size=(5, 5)):
+    def __init__(self, num_classes_hierarchy, num_additional_features, output_size=(5, 5), dropout_rate=0.5):
         super(HierarchicalCNN, self).__init__()
 
         self.conv1 = nn.Sequential(
@@ -93,7 +95,7 @@ class HierarchicalCNN(nn.Module):
         self.adaptive_pool = nn.AdaptiveAvgPool2d(output_size)
 
         self.branches = nn.ModuleList([
-            BranchCNN(output_size[0] * output_size[1] * 512 + num_additional_features, num_classes)
+            BranchCNN(output_size[0] * output_size[1] * 512 + num_additional_features, num_classes, dropout_rate)
             for num_classes in num_classes_hierarchy
         ])
 
