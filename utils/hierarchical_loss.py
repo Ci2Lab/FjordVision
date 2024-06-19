@@ -9,7 +9,7 @@ class HierarchicalCrossEntropyLoss(nn.Module):
 
         :param num_levels: The number of hierarchical levels.
         :param alpha: The initial value for the alpha parameter.
-        :param learnable_alpha: Specifies whether alpha should be a learnable par ameter.
+        :param learnable_alpha: Specifies whether alpha should be a learnable parameter.
         :param device: The device (cpu or cuda) where the tensors will be allocated.
         """
         super(HierarchicalCrossEntropyLoss, self).__init__()

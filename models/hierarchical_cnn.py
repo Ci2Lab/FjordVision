@@ -1,5 +1,3 @@
-# models/hierarchical_cnn.py
-
 import torch
 import torch.nn as nn
 from .branch_cnn import BranchCNN
@@ -9,27 +7,26 @@ class Mish(nn.Module):
         return x * torch.tanh(nn.functional.softplus(x))
 
 class ChannelAttention(nn.Module):
-    def __init__(self, num_channels, reduction_ratio=4):
+    def __init__(self, num_channels, reduction_ratio=2):  # Decreased reduction ratio for more complex attention
         super(ChannelAttention, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
-        self.fc = nn.Sequential(
-            nn.Linear(num_channels, num_channels // reduction_ratio, bias=False),
-            Mish(),
-            nn.Linear(num_channels // reduction_ratio, num_channels, bias=False),
-            nn.Sigmoid()
-        )
+        self.conv1 = nn.Conv2d(num_channels, num_channels // reduction_ratio, kernel_size=1, bias=False)
+        self.mish = Mish()
+        self.conv2 = nn.Conv2d(num_channels // reduction_ratio, num_channels, kernel_size=1, bias=False)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        avg_out = self.fc(self.avg_pool(x).view(x.size(0), -1))
-        max_out = self.fc(self.max_pool(x).view(x.size(0), -1))
+        avg_out = self.conv2(self.mish(self.conv1(self.avg_pool(x))))
+        max_out = self.conv2(self.mish(self.conv1(self.max_pool(x))))
         out = avg_out + max_out
-        return nn.Sigmoid()(out).view(x.size(0), x.size(1), 1, 1) * x
+        return self.sigmoid(out) * x
 
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super(SpatialAttention, self).__init__()
         self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=kernel_size // 2, bias=False)
+        self.conv2 = nn.Conv2d(1, 1, kernel_size, padding=kernel_size // 2, bias=False)  # Additional conv layer for more complex attention
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -37,6 +34,7 @@ class SpatialAttention(nn.Module):
         max_out, _ = torch.max(x, dim=1, keepdim=True)
         combined = torch.cat([avg_out, max_out], dim=1)
         attention = self.sigmoid(self.conv1(combined))
+        attention = self.sigmoid(self.conv2(attention))  # Apply additional conv layer
         return x * attention.expand_as(x)
 
 class HierarchicalCNN(nn.Module):
@@ -100,15 +98,15 @@ class HierarchicalCNN(nn.Module):
         ])
 
     def register_hooks(self):
-            self.activations = []
+        self.activations = []
 
-            def hook_fn(module, input, output):
-                self.activations.append(output.detach())
+        def hook_fn(module, input, output):
+            self.activations.append(output.detach())
 
-            self.conv1[-1].register_forward_hook(hook_fn)
-            self.conv2[-1].register_forward_hook(hook_fn)
-            self.conv3[-1].register_forward_hook(hook_fn)
-            self.conv4[-1].register_forward_hook(hook_fn)
+        self.conv1[-1].register_forward_hook(hook_fn)
+        self.conv2[-1].register_forward_hook(hook_fn)
+        self.conv3[-1].register_forward_hook(hook_fn)
+        self.conv4[-1].register_forward_hook(hook_fn)
 
     def forward(self, x, conf, pred_species):
         outputs = []

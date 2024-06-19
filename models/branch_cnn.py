@@ -13,7 +13,15 @@ class BranchCNN(nn.Module):
         super(BranchCNN, self).__init__()
 
         self.fc_layers = nn.Sequential(
-            nn.Linear(num_in_features, 1024),
+            nn.Linear(num_in_features, 4096),
+            nn.BatchNorm1d(4096),
+            Mish(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(4096, 2048),
+            nn.BatchNorm1d(2048),
+            Mish(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(2048, 1024),
             nn.BatchNorm1d(1024),
             Mish(),
             nn.Dropout(dropout_rate),
@@ -25,7 +33,11 @@ class BranchCNN(nn.Module):
             nn.BatchNorm1d(256),
             Mish(),
             nn.Dropout(dropout_rate),
-            nn.Linear(256, num_classes),
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            Mish(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(128, num_classes),
         )
 
     def forward(self, x, additional_features):

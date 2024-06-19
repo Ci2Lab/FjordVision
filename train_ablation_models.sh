@@ -5,8 +5,6 @@ alpha_values=(0 0.2 0.5 0.8 1)
 
 # List of experiments to run
 declare -A experiments
-experiments["rt-detr"]="scripts/rt-detr/hierarchical-classification-training.py"
-experiments["yolov9"]="scripts/yolov9/hierarchical-classification-training.py"
 experiments["yolov8"]="scripts/hierarchical-classification-training.py"
 
 # Loop through each experiment
