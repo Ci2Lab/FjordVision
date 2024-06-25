@@ -38,7 +38,7 @@ class SpatialAttention(nn.Module):
         return x * attention.expand_as(x)
 
 class HierarchicalCNN(nn.Module):
-    def __init__(self, num_classes_hierarchy, output_size=(5, 5)):
+    def __init__(self, num_classes_hierarchy, dropout_rate=0.5):
         super(HierarchicalCNN, self).__init__()
 
         self.conv1 = nn.Sequential(
@@ -48,36 +48,69 @@ class HierarchicalCNN(nn.Module):
             nn.Conv2d(32, 64, kernel_size=5, padding=2),
             nn.BatchNorm2d(64),
             Mish(),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            ChannelAttention(64),
+            SpatialAttention(kernel_size=5),
         )
 
         self.conv2 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=5, padding=2),
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             Mish(),
-            nn.Conv2d(128, 256, kernel_size=5, padding=2),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
             Mish(),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            ChannelAttention(128),
+            SpatialAttention(kernel_size=5),
         )
 
-        self.ca = ChannelAttention(256)
-        self.sa = SpatialAttention()
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            Mish(),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            Mish(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            ChannelAttention(256),
+            SpatialAttention(kernel_size=5),
+        )
 
-        self.branch1 = BranchCNN(256, num_classes_hierarchy[0], output_size)
-        self.branch2 = BranchCNN(256, num_classes_hierarchy[1], output_size)
-        self.branch3 = BranchCNN(256, num_classes_hierarchy[2], output_size)
-        self.branch4 = BranchCNN(256, num_classes_hierarchy[3], output_size)
+        self.conv4 = nn.Sequential(
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            Mish(),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            Mish(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            ChannelAttention(512),
+            SpatialAttention(kernel_size=5),
+        )
+
+        self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
+
+        # Creating branch CNNs for each hierarchical level
+        self.binary_branch = BranchCNN(64, num_classes_hierarchy[0])
+        self.class_branch = BranchCNN(128, num_classes_hierarchy[1])
+        self.genus_branch = BranchCNN(256, num_classes_hierarchy[2])
+        self.species_branch = BranchCNN(512, num_classes_hierarchy[3])
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.ca(x)
-        x = self.sa(x)
+        x1 = self.conv1(x)
+        x2 = self.conv2(x1)
+        x3 = self.conv3(x2)
+        x4 = self.conv4(x3)
 
-        out1 = self.branch1(x)
-        out2 = self.branch2(x)
-        out3 = self.branch3(x)
-        out4 = self.branch4(x)
+        x1_pooled = self.global_avg_pool(x1).view(x1.size(0), -1)
+        x2_pooled = self.global_avg_pool(x2).view(x2.size(0), -1)
+        x3_pooled = self.global_avg_pool(x3).view(x3.size(0), -1)
+        x4_pooled = self.global_avg_pool(x4).view(x4.size(0), -1)
 
-        return out1, out2, out3, out4
+        binary_output = self.binary_branch(x1_pooled)
+        class_output = self.class_branch(x2_pooled)
+        genus_output = self.genus_branch(x3_pooled)
+        species_output = self.species_branch(x4_pooled)
+
+        return [binary_output, class_output, genus_output, species_output]

@@ -16,9 +16,16 @@ sys.path.append('.')
 from models.ablations.attention_removed.hierarchical_cnn import HierarchicalCNN
 from utils.custom_dataset import CustomDataset
 from utils.hierarchical_loss import HierarchicalCrossEntropyLoss
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
+# Command-line argument parsing
 parser = argparse.ArgumentParser(description='Hierarchical Classification Training')
 parser.add_argument('--alpha', type=float, required=True, help='Alpha value for the model')
+parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate for the optimizer')
+parser.add_argument('--weight_decay', type=float, default=0.01, help='Weight decay for the optimizer')
+parser.add_argument('--dropout_rate', type=float, default=0.5, help='Dropout rate for the model')
+parser.add_argument('--batch_size', type=int, default=50, help='Batch size for training')
+parser.add_argument('--accumulation_steps', type=int, default=4, help='Gradient accumulation steps')
 args = parser.parse_args()
 
 # Load taxonomy and class information
@@ -42,6 +49,7 @@ for node in root.descendants:
 
 # Load dataset
 df = pd.read_parquet('datasets/yolov8-segmented-objects-dataset.parquet')
+
 train_val_df, test_df = train_test_split(df, test_size=0.3, random_state=42)
 train_df, val_df = train_test_split(train_val_df, test_size=0.5, random_state=42)
 
@@ -51,59 +59,88 @@ for node in root.descendants:
     rank_counts[node.rank] += 1
 
 num_classes_hierarchy = [rank_counts['binary'], rank_counts['class'], rank_counts['genus'], rank_counts['species']]
-num_additional_features = 2  # Ensure this is defined as required
+num_additional_features = 2
+num_levels = len(num_classes_hierarchy)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = HierarchicalCNN(num_classes_hierarchy, num_additional_features, dropout_rate=args.dropout_rate).to(device)
 
-# Properly passing both required arguments to the HierarchicalCNN constructor
-model = HierarchicalCNN(num_classes_hierarchy, num_additional_features).to(device)
+# Ensure model parameters require gradients
+for param in model.parameters():
+    param.requires_grad = True
 
-# Data loaders
+# DataLoader
 train_dataset = CustomDataset(train_df, object_names, subcategory_names, category_names, binary_names, root)
 val_dataset = CustomDataset(val_df, object_names, subcategory_names, category_names, binary_names, root)
 test_dataset = CustomDataset(test_df, object_names, subcategory_names, category_names, binary_names, root)
 
-train_loader = DataLoader(train_dataset, batch_size=50, shuffle=True, num_workers=8)
-val_loader = DataLoader(val_dataset, batch_size=50, shuffle=False, num_workers=8)
-test_loader = DataLoader(test_dataset, batch_size=50, shuffle=False, num_workers=8)
+train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=8)
+val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=8)
+test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=8)
+
+# Alpha value from argument
+initial_alpha = args.alpha
+alpha_learnable = False
 
 # Training Preparation
 num_epochs = 100
 best_val_loss = float('inf')
+patience = 20
 patience_counter = 0
-criterion = HierarchicalCrossEntropyLoss(num_levels=len(num_classes_hierarchy), device=device)
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
+
+# Define the criterion
+criterion = HierarchicalCrossEntropyLoss(num_levels=num_levels, alpha=initial_alpha, learnable_alpha=alpha_learnable, device=device)
+
+# Ensure criterion parameters require gradients if they exist
+if alpha_learnable:
+    for param in criterion.parameters():
+        param.requires_grad = True
+
+# Combine parameters from both model and criterion if criterion has learnable parameters
+all_parameters = list(model.parameters()) + list(criterion.parameters()) if alpha_learnable else model.parameters()
+
+# Initialize the AdamW optimizer with both model and potentially criterion's parameters
+optimizer = torch.optim.AdamW(all_parameters, lr=args.learning_rate, weight_decay=args.weight_decay)
+
+# Adjust the scheduler's milestones considering the usual early stopping point
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
 
 # Set up directories for logs and weights
-log_directory = 'models/ablations/attention_removed/logs'
-weights_directory = 'models/ablations/attention_removed/weights/'
+log_directory = 'logs/ablations/attention_removed'
+weights_directory = 'datasets/hierarchical-model-weights/ablations/attention_removed/weights'
 os.makedirs(log_directory, exist_ok=True)
 os.makedirs(weights_directory, exist_ok=True)
 
+# Dynamic file names based on alpha value
 log_filename = os.path.join(log_directory, f'model_alpha_{args.alpha:.2f}.csv')
 best_model_filename = os.path.join(weights_directory, f'best_model_alpha_{args.alpha:.2f}.pth')
 last_model_filename = os.path.join(weights_directory, f'last_model_alpha_{args.alpha:.2f}.pth')
 
-# Training and Validation Loop
+# Training and Validation Loop with Logging
 with open(log_filename, mode='w', newline='') as file:
     writer = csv.writer(file)
-    headers = ['Epoch', 'Training Loss', 'Validation Loss', 'Alpha']
+    headers = ['Epoch', 'Training Loss', 'Validation Loss', 'Alpha'] + [f'Lambda Weight Lvl {i+1}' for i in range(num_levels)]
     writer.writerow(headers)
 
     for epoch in range(num_epochs):
         model.train()
         train_loss = 0.0
 
-        for images, conf, pred_species, species_index, genus_index, class_index, binary_index in train_loader:
+        optimizer.zero_grad()
+        for i, (images, conf, pred_species, species_index, genus_index, class_index, binary_index) in enumerate(train_loader):
             images, conf, pred_species = images.to(device), conf.to(device), pred_species.to(device)
             species_index, genus_index, class_index, binary_index = species_index.to(device), genus_index.to(device), class_index.to(device), binary_index.to(device)
 
-            optimizer.zero_grad()
             outputs = model(images, conf, pred_species)
             targets = [binary_index, class_index, genus_index, species_index]
             loss = criterion(outputs, targets)
             loss.backward()
-            optimizer.step()
+            
+            if (i + 1) % args.accumulation_steps == 0:
+                # Gradient clipping
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                optimizer.step()
+                optimizer.zero_grad()
 
             train_loss += loss.item()
 
@@ -122,9 +159,10 @@ with open(log_filename, mode='w', newline='') as file:
         train_loss /= len(train_loader)
         val_loss /= len(val_loader)
 
-        log_row = [epoch+1, train_loss, val_loss, args.alpha]
+        lambda_weights_list = criterion.lambda_weights.cpu().detach().numpy().tolist()
+        log_row = [epoch+1, train_loss, val_loss, criterion.alpha.item()] + lambda_weights_list
         writer.writerow(log_row)
-        print(f"Epoch: {epoch+1}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}, Alpha: {args.alpha:.4f}")
+        print(f"Epoch: {epoch+1}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}, Alpha: {criterion.alpha.item():.4f}, Lambda Weights: {lambda_weights_list}")
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -132,9 +170,11 @@ with open(log_filename, mode='w', newline='') as file:
             patience_counter = 0
         else:
             patience_counter += 1
-            if patience_counter >= 20:
+            if patience_counter >= patience:
                 print("Early stopping triggered.")
                 break
 
+        # After computing validation loss at the end of an epoch
         scheduler.step(val_loss)
+
         torch.save(model.state_dict(), last_model_filename)

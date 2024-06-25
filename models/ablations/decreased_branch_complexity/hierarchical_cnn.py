@@ -38,7 +38,7 @@ class SpatialAttention(nn.Module):
         return x * attention.expand_as(x)
 
 class HierarchicalCNN(nn.Module):
-    def __init__(self, num_classes_hierarchy, num_additional_features, output_size=(5, 5)):
+    def __init__(self, num_classes_hierarchy, num_additional_features, dropout_rate=0.5):
         super(HierarchicalCNN, self).__init__()
 
         self.conv1 = nn.Sequential(
@@ -90,28 +90,31 @@ class HierarchicalCNN(nn.Module):
         )
 
         self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.adaptive_pool = nn.AdaptiveAvgPool2d(output_size)
+        self.adaptive_pool = nn.AdaptiveAvgPool2d(output_size=(5, 5))
 
-        self.branches = nn.ModuleList([
-            BranchCNN(output_size[0] * output_size[1] * 512, num_classes, num_additional_features)
-            for num_classes in num_classes_hierarchy
-        ])
+        # Creating branch CNNs for each hierarchical level
+        self.binary_branch = BranchCNN(64, num_classes_hierarchy[0], dropout_rate)
+        self.class_branch = BranchCNN(128, num_classes_hierarchy[1], dropout_rate)
+        self.genus_branch = BranchCNN(256, num_classes_hierarchy[2], dropout_rate)
+        self.species_branch = BranchCNN(512, num_classes_hierarchy[3], dropout_rate)
 
     def forward(self, x, conf, pred_species):
-        outputs = []
         additional_features = torch.cat((conf.view(-1, 1), pred_species.view(-1, 1)), dim=1)
 
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
+        x1 = self.conv1(x)
+        x1_pooled = self.global_avg_pool(x1).view(x1.size(0), -1)
+        binary_output = self.binary_branch(x1_pooled, additional_features)
 
-        x = self.global_avg_pool(x)
-        x = self.adaptive_pool(x)
-        x = x.view(x.size(0), -1)
+        x2 = self.conv2(x1)
+        x2_pooled = self.global_avg_pool(x2).view(x2.size(0), -1)
+        class_output = self.class_branch(x2_pooled, additional_features)
 
-        for branch in self.branches:
-            branch_output = branch(x, additional_features)
-            outputs.append(branch_output)
+        x3 = self.conv3(x2)
+        x3_pooled = self.global_avg_pool(x3).view(x3.size(0), -1)
+        genus_output = self.genus_branch(x3_pooled, additional_features)
 
-        return outputs
+        x4 = self.conv4(x3)
+        x4_pooled = self.global_avg_pool(x4).view(x4.size(0), -1)
+        species_output = self.species_branch(x4_pooled, additional_features)
+
+        return [binary_output, class_output, genus_output, species_output]
