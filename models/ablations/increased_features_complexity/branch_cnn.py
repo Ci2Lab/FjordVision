@@ -1,3 +1,5 @@
+# models/ablations/increased_features_complexity/branch_cnn.py
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,8 +11,9 @@ class Mish(nn.Module):
 class BranchCNN(nn.Module):
     def __init__(self, num_in_features, num_classes, num_additional_features, dropout_rate=0.5):
         super(BranchCNN, self).__init__()
-        
-        combined_features_size = num_in_features + num_additional_features * 4  # Ensure combined_features_size is an integer
+
+        # Ensure combined_features_size is an integer
+        combined_features_size = num_in_features + num_additional_features
 
         self.fc_layers = nn.Sequential(
             nn.Linear(combined_features_size, 4096),
