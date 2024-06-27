@@ -5,7 +5,13 @@ alpha_values=(0 0.2 0.5 0.8 1)
 
 # List of experiments to run
 declare -A experiments
+experiments["yolov8"]="scripts/hierarchical-classification-training.py"
+experiments["yolov9"]="scripts/yolov9/hierarchical-classification-training.py"
+experiments["rtdetr"]="scripts/rt-detr/hierarchical-classification-training.py"
+experiments["attention_removed"]="scripts/attention_removed/hierarchical-classification-training.py"
+experiments["decreased_branch_complexity"]="scripts/decreased_branch_complexity/hierarchical-classification-training.py"
 experiments["increased_features_complexity"]="scripts/increased_features_complexity/hierarchical-classification-training.py"
+experiments["remove_features"]="scripts/remove_features/hierarchical-classification-training.py"
 
 # Log file to capture the output and errors
 log_file="experiment_log.txt"
