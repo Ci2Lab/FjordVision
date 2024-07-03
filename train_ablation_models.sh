@@ -8,6 +8,7 @@ declare -A experiments
 experiments["yolov8"]="scripts/hierarchical-classification-training.py"
 experiments["yolov9"]="scripts/yolov9/hierarchical-classification-training.py"
 experiments["rtdetr"]="scripts/rt-detr/hierarchical-classification-training.py"
+experiments["maskrcnn"]="scripts/mask-rcnn/hierarchical-classification-training.py"
 experiments["attention_removed"]="scripts/attention_removed/hierarchical-classification-training.py"
 experiments["decreased_branch_complexity"]="scripts/decreased_branch_complexity/hierarchical-classification-training.py"
 experiments["increased_features_complexity"]="scripts/increased_features_complexity/hierarchical-classification-training.py"
