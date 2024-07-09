@@ -23,6 +23,7 @@ The FjordVision project explores the impact of various alpha regularization para
 - [Installation](#installation)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
+- [Detailed Documentation](#detailed-documentation)
 
 ## Installation
 To set up your environment for running these experiments, follow these steps:
@@ -55,17 +56,16 @@ Run the script
 To download the datasets and experimental data that the rest of code uses.
 This will download several things.
 
-- **The Fjord Dataset** which contains 17000 annotated images
-in the [Yolo txt format](https://docs.ultralytics.com/datasets/segment/).
-- Weights of Yolo v8 for the COCO dataset and The Fjord Dataset
+- **Esefjorden Marine Vegetation Segmentation Dataset (EMVSD)** which contains 17000 annotated images
+in the [Yolo txt format](https://docs.ultralytics.com/datasets/segment/) and COCO mask format.
+- Weights of Yolo v8, Yolo v9 and RTDETR and Mask-RCNN for EMVSD.
 - Datasets used for training our hierarcical classifiers. These are stored as a 
   combination of *parquet* containing labels and folders of segmented images.
 - Weights of trained hierarcical classification models. 
-- The validation set of the COCO dataset. 
 
 ### Run our model on video
 
-If you want to run inference with our model on a video stream use the following
+If you want to run inference with our models on a video stream use the following
 command
 
 ```bash
@@ -84,7 +84,7 @@ This is done by running the notebook `hierarcical-cnn-visualisation.ipyn`
 
 ## Project Structure
 
-- **datasets/**: Contains the Fjord and COCO datasets, including segmented images and model weights.
+- **datasets/**: Contains the EMVSD, including segmented images and model weights.
 - **demo/**: Demo videos and GIFs for visualizing model outputs.
 - **fjordvision/**: Python virtual enviromnent
 - **models/**: Definitions of the hierarchical models.
@@ -93,7 +93,6 @@ This is done by running the notebook `hierarcical-cnn-visualisation.ipyn`
 - **utils/**: Helper functions and utilities for model operation and data manipulation.
 - **experimental-data.ipynb**: Jupyter notebook for initial data analysis.
 - **hierarchical-cnn-visualisation.ipynb**, **run-experiments.ipynb**: Notebooks for running experiments and visualizing model performance.
-
 
 ## Detailed Documentation
 

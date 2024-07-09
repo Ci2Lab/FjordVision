@@ -27,15 +27,11 @@ The `BranchCNN` class is designed to efficiently combine primary input features 
 
 - `num_in_features`: Integer representing the number of input features.
 - `num_classes`: Integer representing the number of target output classes.
-- `num_additional_features`: Integer representing the number of additional features.
+- `dropout_rate`: Float representing the dropout rate to prevent overfitting. Default is 0.5.
 
 #### Architecture
 
-1. **Additional Feature Layers**:
-   - Transforms additional features to enhance their representational capacity.
-   - Uses Mish activation for non-linear transformations.
-
-2. **Fully Connected Layers**:
+1. **Fully Connected Layers**:
    - Processes the concatenated primary and additional features.
    - Includes layers for normalization and dropout to prevent overfitting.
    - Employs Mish activation function throughout for non-linearity.
@@ -46,7 +42,6 @@ The `BranchCNN` class is designed to efficiently combine primary input features 
   - `x`: Tensor containing the primary features.
   - `additional_features`: Tensor containing the auxiliary features.
 - **Process**:
-  - Auxiliary features are expanded and processed separately.
   - Main and auxiliary features are concatenated and passed through dense layers.
 - **Output**:
   - Returns the logits for each class based on the combined feature set.
@@ -60,7 +55,7 @@ import torch
 from branch_cnn import BranchCNN
 
 # Initialize model
-model = BranchCNN(num_in_features=100, num_classes=10, num_additional_features=20)
+model = BranchCNN(num_in_features=100, num_classes=10, dropout_rate=0.5)
 
 # Prepare input tensors
 x = torch.randn(32, 100)  # Batch size of 32, 100 features each

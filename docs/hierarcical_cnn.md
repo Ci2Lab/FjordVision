@@ -36,12 +36,11 @@ class ChannelAttention(nn.Module):
         max_out = self.fc(self.max_pool(x).view(x.size(0), -1))
         out = avg_out + max_out
         return nn.Sigmoid()(out).view(x.size(0), x.size(1), 1, 1) * x
-
 ```
 
 ### Spatial Attention Module
 
-The SpatialAttention module is designed to enhance the spatial focus of the network on relevant features by applying a sigmoid-activated convolution over combined maximum and average pooled channels
+The SpatialAttention module is designed to enhance the spatial focus of the network on relevant features by applying a sigmoid-activated convolution over combined maximum and average pooled channels.
 
 ```python
 class SpatialAttention(nn.Module):
@@ -68,7 +67,7 @@ from torch.utils.data import DataLoader
 
 # Define the hierarchical structure for the number of classes at each level
 num_classes_hierarchy = [2, 5, 10, 20]  # Binary, Class, Genus, Species levels
-num_additional_features = 3  # Number of additional features like confidence or IOU
+num_additional_features = 2  # Number of additional features like confidence and predicted species
 
 # Initialize the HierarchicalCNN model
 model = HierarchicalCNN(num_classes_hierarchy, num_additional_features)
@@ -77,7 +76,6 @@ model = HierarchicalCNN(num_classes_hierarchy, num_additional_features)
 # Note: In a real scenario, replace the random tensors below with actual feature data and metadata.
 data = {'features': torch.randn(32, 3, 224, 224),  # Example feature data (batch size, channels, H, W)
         'conf': torch.randn(32, 1),  # Example confidence scores
-        'iou': torch.randn(32, 1),  # Example intersection-over-union scores
         'pred_species': torch.randn(32, 20)}  # Predicted probabilities for 20 species
 
 # Properly initialize the dataset with meaningful lists instead of empty ones.
@@ -96,10 +94,10 @@ dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 # Fetch a batch of data
 for batch in dataloader:
-    images, conf, iou, pred_species = batch['features'], batch['conf'], batch['iou'], batch['pred_species']
+    images, conf, pred_species = batch['features'], batch['conf'], batch['iou'], batch['pred_species']
 
     # Compute output
-    output = model(images, conf, iou, pred_species)
+    output = model(images, conf, pred_species)
     print(output)  # Output from the model after processing the batch
 
 ```
