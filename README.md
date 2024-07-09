@@ -98,4 +98,4 @@ This is done by running the notebook `hierarcical-cnn-visualisation.ipyn`
 
 For more in-depth documentation of the modules and code, see the following links:
 - [BranchCNN Model Documentation](docs/branch_cnn.md)
-- [BranchCNN Model Documentation](docs/hierarcical_cnn.md)
+- [HierarchcialCNN Model Documentation](docs/hierarcical_cnn.md)
