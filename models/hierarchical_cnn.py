@@ -106,6 +106,17 @@ class HierarchicalCNN(nn.Module):
         self.genus_branch = BranchCNN(128 + num_additional_features, num_classes_hierarchy[2], dropout_rate)
         self.species_branch = BranchCNN(256 + num_additional_features, num_classes_hierarchy[3], dropout_rate)
 
+    def register_hooks(self):
+        self.activations = []
+
+        def hook_fn(module, input, output):
+            self.activations.append(output.detach())
+
+        self.conv1[-1].register_forward_hook(hook_fn)
+        self.conv2[-1].register_forward_hook(hook_fn)
+        self.conv3[-1].register_forward_hook(hook_fn)
+        self.conv4[-1].register_forward_hook(hook_fn)
+
     def forward(self, x, conf, pred_species):
         additional_features = torch.cat((conf.view(-1, 1), pred_species.view(-1, 1)), dim=1)
 
