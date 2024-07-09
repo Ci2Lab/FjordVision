@@ -21,7 +21,7 @@ mkdir -p datasets
 if [ ! -f "datasets/EMVSD/EMVSD.yaml" ]; then
     echo "Downloading 'Esefjorden Marine Vegetation Segmentation Dataset'..."
     wget -O EMVSD.zip 'https://figshare.com/ndownloader/files/47516684'
-    unzip -o EMVSD.zip -d datasets
+    unzip -o EMVSD.zip -d .
     rm EMVSD.zip
     echo "'Esefjorden Marine Vegetation Segmentation Dataset' is ready."
 else
