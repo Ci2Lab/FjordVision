@@ -35,7 +35,7 @@ git clone https://github.com/bcwein/FjordVision.git
 cd FjordVision
 
 # Create and activate a virtual environment
-python -m venv fjordvision
+python3 -m venv fjordvision
 source fjordvision/bin/activate
 
 # Install required dependencies
