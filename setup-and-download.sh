@@ -31,7 +31,7 @@ fi
 # Download and unzip 'FjordVision Experimental Data' from Figshare
 if [ ! -d "datasets/hierarchical-model-weights" ]; then
     echo "Downloading 'FjordVision Experimental Data'..."
-    wget -O experimental_data.zip 'https://figshare.com/ndownloader/files/47514674'
+    wget -O experimental_data.zip 'https://figshare.com/ndownloader/files/50154207'
     unzip -o experimental_data.zip -d datasets  # Extract directly to the datasets directory
     rm experimental_data.zip
     echo "'FjordVision Experimental Data' is ready."
