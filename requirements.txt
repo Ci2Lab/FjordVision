@@ -96,9 +96,11 @@ smart-open==7.0.4
 spacy==3.7.5
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
+squarify==0.4.4
 srsly==2.4.8
 stack-data==0.6.3
 sympy==1.13.0
+tenacity==9.0.0
 thinc==8.2.2
 thop==0.1.1.post2209072238
 threadpoolctl==3.5.0
@@ -111,7 +113,7 @@ triton==2.3.1
 typer==0.12.3
 typing_extensions==4.12.2
 tzdata==2024.1
-ultralytics==8.2.52
+ultralytics==8.3.19
 ultralytics-thop==2.0.0
 urllib3==2.2.2
 wasabi==1.1.3
