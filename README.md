@@ -2,7 +2,7 @@
 
 This GitHub repository contains the code implementation for our paper:
 
-📄 **Marine Vegetation Analysis in Esefjorden, Norway using Hierarchical CNN-based Classification**  
+📄 **Hierarchical deep learning framework for automated marine vegetation and fauna analysis using ROV video data**  
 Published in *ScienceDirect*  
 [DOI: 10.1016/j.ecoinf.2024.102567](https://www.sciencedirect.com/science/article/pii/S1574954124005089)
 
