@@ -1,7 +1,10 @@
 # FjordVision Hierarchical Classification Model
 
-This github repo is the code implementation of our paper
-*Marine Vegetation Analysis in Esefjorden, Norway using Hierarchical CNN-based Classification*.
+This GitHub repository contains the code implementation for our paper:
+
+📄 **Marine Vegetation Analysis in Esefjorden, Norway using Hierarchical CNN-based Classification**  
+Published in *ScienceDirect*  
+[DOI: 10.1016/j.ecoinf.2024.102567](https://www.sciencedirect.com/science/article/pii/S1574954124005089)
 
 ## Demo: Taxonomic Classification at Different Levels
 
